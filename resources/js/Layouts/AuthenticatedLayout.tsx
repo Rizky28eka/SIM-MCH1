@@ -1,179 +1,295 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import ApplicationLogo from '@/components/ApplicationLogo';
+import Dropdown from '@/components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
+import {
+    LayoutDashboard, Building2, CalendarCheck, Users,
+    Settings, Search, Bell, LogOut, User, ChevronRight,
+    X, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen,
+    Menu,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export default function Authenticated({
-    header,
-    children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+export default function Authenticated({ header, children }: PropsWithChildren<{ header?: ReactNode }>) {
+    const { auth, flash } = usePage().props as any;
+    const user = auth.user;
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    // Desktop: sidebar open/collapsed. Mobile: overlay drawer
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState({ type: 'success', text: '' });
 
-    return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav className="border-b border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+    useEffect(() => {
+        if (flash?.message || flash?.error) {
+            setToastMessage({ type: flash.message ? 'success' : 'error', text: flash.message || flash.error });
+            setShowToast(true);
+            const timer = setTimeout(() => setShowToast(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
+
+    // Close mobile drawer on route change
+    useEffect(() => { setIsMobileOpen(false); }, []);
+
+    const mainNavItems = [
+        { name: 'Dashboard',   href: route('dashboard'),       icon: LayoutDashboard, active: route().current('dashboard')   },
+        { name: 'Ruangan',     href: route('rooms.index'),     icon: Building2,       active: route().current('rooms.*')     },
+        { name: 'Peminjaman',  href: route('bookings.index'),  icon: CalendarCheck,   active: route().current('bookings.*')  },
+    ];
+    const adminNavItems = [
+        { name: 'Manajemen User', href: route('admin.users.index'), icon: Users,     active: route().current('admin.users.*') },
+        { name: 'Pengaturan',     href: route('profile.edit'),      icon: Settings,  active: route().current('profile.*')    },
+    ];
+    const isAdmin = user.roles?.some((r: any) => r.name === 'admin') || user.email === 'admin@mch.com';
+
+    // ── Sidebar inner content (shared between desktop & mobile) ──────────────
+    const SidebarContent = ({ compact = false }: { compact?: boolean }) => (
+        <>
+            {/* Logo */}
+            <div className={cn(
+                'flex items-center h-[64px] border-b border-gray-200 px-4 shrink-0',
+                compact ? 'justify-center' : 'gap-3 justify-between'
+            )}>
+                <Link href="/" className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-gray-50 border-2 border-gray-200">
+                        <ApplicationLogo className="h-8 w-8 object-contain" />
+                    </div>
+                    {!compact && (
+                        <div className="min-w-0">
+                            <p className="font-extrabold text-[14px] tracking-tight text-gray-900 leading-none">SIM-MCH</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Sistem Manajemen</p>
+                        </div>
+                    )}
+                </Link>
+                {!compact && (
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="hidden lg:flex h-7 w-7 rounded-md items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
+                    >
+                        <PanelLeftClose className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
+            {/* Nav */}
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+                <div>
+                    {!compact && <p className="px-3 mb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Menu</p>}
+                    <ul className="space-y-0.5">
+                        {mainNavItems.map((item) => (
+                            <li key={item.name}>
+                                <Link
+                                    href={item.href}
+                                    title={compact ? item.name : undefined}
+                                    onClick={() => setIsMobileOpen(false)}
+                                    className={cn(
+                                        'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group',
+                                        compact ? 'justify-center' : '',
+                                        item.active ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                                    )}
+                                >
+                                    <item.icon className={cn('h-4 w-4 shrink-0', item.active ? 'text-white' : 'text-gray-400 group-hover:text-gray-600')} />
+                                    {!compact && <span className="text-[13px] font-medium flex-1">{item.name}</span>}
+                                    {!compact && item.active && <ChevronRight className="h-3.5 w-3.5 text-white/50" />}
                                 </Link>
-                            </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Dashboard
-                                </NavLink>
-                            </div>
-                        </div>
-
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
-                                            >
-                                                {user.name}
-
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-
-                                    <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Log Out
-                                        </Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
-
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
+                {isAdmin && (
+                    <div>
+                        {!compact && <p className="px-3 mb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Administrator</p>}
+                        <ul className="space-y-0.5">
+                            {adminNavItems.map((item) => (
+                                <li key={item.name}>
+                                    <Link
+                                        href={item.href}
+                                        title={compact ? item.name : undefined}
+                                        onClick={() => setIsMobileOpen(false)}
+                                        className={cn(
+                                            'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group',
+                                            compact ? 'justify-center' : '',
+                                            item.active ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                                        )}
+                                    >
+                                        <item.icon className={cn('h-4 w-4 shrink-0', item.active ? 'text-white' : 'text-gray-400 group-hover:text-gray-600')} />
+                                        {!compact && <span className="text-[13px] font-medium flex-1">{item.name}</span>}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-
-                    <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                                {user.name}
-                            </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user.email}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
-                        </div>
-                    </div>
-                </div>
+                )}
             </nav>
 
-            {header && (
-                <header className="bg-white shadow dark:bg-gray-800">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
-                </header>
+            {/* User */}
+            <div className="border-t border-gray-200 shrink-0">
+                <div className={cn('p-3', compact && 'flex justify-center')}>
+                    <Dropdown>
+                        <Dropdown.Trigger>
+                            <button className={cn(
+                                'flex items-center gap-2.5 rounded-xl p-2 hover:bg-gray-50 transition-colors group',
+                                compact ? 'w-auto justify-center' : 'w-full'
+                            )}>
+                                <div className="h-8 w-8 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
+                                    {user.name.charAt(0).toUpperCase()}
+                                </div>
+                                {!compact && (
+                                    <>
+                                        <div className="flex-1 text-left min-w-0">
+                                            <p className="text-[12px] font-semibold text-gray-800 truncate leading-none">{user.name}</p>
+                                            <p className="text-[10px] text-gray-400 truncate mt-0.5">{user.email}</p>
+                                        </div>
+                                        <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                                    </>
+                                )}
+                            </button>
+                        </Dropdown.Trigger>
+                        <Dropdown.Content align="left" contentClasses="py-1.5 bg-white border-2 border-gray-200 shadow-xl rounded-xl w-52 mb-2">
+                            <div className="px-3 py-2 border-b border-gray-50 mb-1">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Akun Saya</p>
+                            </div>
+                            <Dropdown.Link href={route('profile.edit')} className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-gray-50">
+                                <User className="h-3.5 w-3.5 text-gray-400" /> Profil Saya
+                            </Dropdown.Link>
+                            <Dropdown.Link href={route('logout')} method="post" as="button" className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-red-50 text-red-600 w-[calc(100%-12px)]">
+                                <LogOut className="h-3.5 w-3.5" /> Keluar
+                            </Dropdown.Link>
+                        </Dropdown.Content>
+                    </Dropdown>
+                </div>
+            </div>
+        </>
+    );
+
+    return (
+        <div className="flex min-h-screen bg-white">
+
+            {/* ── Mobile Overlay ── */}
+            {isMobileOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+                    onClick={() => setIsMobileOpen(false)}
+                />
             )}
 
-            <main>{children}</main>
+            {/* ── Mobile Sidebar Drawer ── */}
+            <aside className={cn(
+                'fixed inset-y-0 left-0 z-50 flex flex-col w-[260px] bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out lg:hidden',
+                isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+            )}>
+                {/* Close button */}
+                <button
+                    onClick={() => setIsMobileOpen(false)}
+                    className="absolute top-4 right-4 h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+                <SidebarContent compact={false} />
+            </aside>
+
+            {/* ── Desktop Sidebar ── */}
+            <aside className={cn(
+                'hidden lg:fixed lg:flex lg:inset-y-0 lg:left-0 lg:z-50 lg:flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out',
+                isSidebarOpen ? 'w-[240px]' : 'w-[70px]'
+            )}>
+                <SidebarContent compact={!isSidebarOpen} />
+            </aside>
+
+            {/* ── Main Content ── */}
+            <main className={cn(
+                'flex-1 flex flex-col min-h-screen bg-white transition-all duration-300 ease-in-out',
+                'pl-0',
+                isSidebarOpen ? 'lg:pl-[240px]' : 'lg:pl-[70px]'
+            )}>
+                {/* Top Header */}
+                <header className="sticky top-0 z-40 bg-white border-b border-gray-200 h-[64px] flex items-center justify-between px-4 md:px-6 shrink-0">
+                    <div className="flex items-center gap-3 flex-1">
+                        {/* Mobile hamburger */}
+                        <button
+                            onClick={() => setIsMobileOpen(true)}
+                            className="lg:hidden h-9 w-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+
+                        {/* Desktop expand sidebar */}
+                        {!isSidebarOpen && (
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="hidden lg:flex h-8 w-8 rounded-lg items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                <PanelLeftOpen className="h-4 w-4" />
+                            </button>
+                        )}
+
+                        {/* Search — hidden on small mobile, shown md+ */}
+                        <div className="relative max-w-xs w-full hidden sm:flex items-center">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Cari..."
+                                className="h-9 w-full pl-9 pr-4 bg-gray-50 border-2 border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gray-300 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right Side */}
+                    <div className="flex items-center gap-1.5">
+                        <button className="relative h-9 w-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                            <Bell className="h-4 w-4" />
+                            <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-red-500 rounded-full border border-white" />
+                        </button>
+                        <div className="h-6 w-px bg-gray-100 mx-1 hidden sm:block" />
+                        <Dropdown>
+                            <Dropdown.Trigger>
+                                <button className="flex items-center gap-2 h-9 px-2 sm:px-3 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 border-2 border-gray-200 transition-colors">
+                                    <div className="h-5 w-5 rounded-md bg-gray-900 flex items-center justify-center text-white font-bold text-[10px]">
+                                        {user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="hidden sm:inline">{user.name.split(' ')[0]}</span>
+                                </button>
+                            </Dropdown.Trigger>
+                            <Dropdown.Content align="right" contentClasses="py-1.5 bg-white border-2 border-gray-200 shadow-xl rounded-xl w-52 mt-1">
+                                <Dropdown.Link href={route('profile.edit')} className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-gray-50">
+                                    <User className="h-3.5 w-3.5 text-gray-400" /> Profil Saya
+                                </Dropdown.Link>
+                                <Dropdown.Link href={route('logout')} method="post" as="button" className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-red-50 text-red-600 w-[calc(100%-12px)]">
+                                    <LogOut className="h-3.5 w-3.5" /> Keluar
+                                </Dropdown.Link>
+                            </Dropdown.Content>
+                        </Dropdown>
+                    </div>
+                </header>
+
+                {/* Page Content */}
+                <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1400px] w-full mx-auto">
+                    {header && <div className="mb-6 md:mb-8">{header}</div>}
+                    {children}
+                </div>
+            </main>
+
+            {/* ── Toast ── */}
+            {showToast && (
+                <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className={cn(
+                        'flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border bg-white text-sm max-w-[calc(100vw-2rem)]',
+                        toastMessage.type === 'success' ? 'border-green-100 text-green-800' : 'border-red-100 text-red-700'
+                    )}>
+                        <div className={cn('h-8 w-8 rounded-lg flex items-center justify-center shrink-0', toastMessage.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500')}>
+                            {toastMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="font-semibold text-[13px] leading-none">{toastMessage.type === 'success' ? 'Berhasil!' : 'Terjadi Kesalahan'}</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[200px] sm:max-w-[240px]">{toastMessage.text}</p>
+                        </div>
+                        <button onClick={() => setShowToast(false)} className="ml-1 h-6 w-6 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors shrink-0">
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -37,6 +37,12 @@
 
     --radius: 0.625rem;
 
+    /* ── MCH Brand Colors ── */
+    --mch-teal: #26a69a;
+    --mch-gold: #e9af2f;
+    --mch-red: #a02525;
+    --mch-slate: #333333;
+
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);

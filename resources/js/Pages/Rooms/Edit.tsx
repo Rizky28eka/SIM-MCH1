@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import {
     ChevronLeft, Save, Building2, Users, ChevronDown,
     Trash2, Plus, X, Image as ImageIcon, ShieldCheck,
+    ArrowRight,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -76,143 +77,149 @@ export default function Edit({ room }: Props) {
             <Head title={`Edit - ${room.name}`} />
 
             {/* ── Page Header ── */}
-            <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-4">
                     <Link
                         href={route('rooms.show', room.id)}
-                        className="group flex items-center justify-center h-9 w-9 rounded-lg bg-white border-2 border-gray-200 text-gray-400 hover:text-gray-900 transition-all shadow-sm active:scale-95 shrink-0"
+                        className="group flex items-center justify-center h-11 w-11 rounded-2xl bg-white border-[1.5px] border-slate-200 text-slate-400 hover:text-slate-900 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 transition-all active:scale-90 shrink-0"
                     >
-                        <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                        <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight">Edit Ruangan</h1>
-                        <p className="text-[12px] text-gray-400 mt-0.5 hidden sm:block">
-                            Mengubah: <span className="text-gray-700 font-semibold">{room.name}</span>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Edit Ruangan
+                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        </h1>
+                        <p className="text-[13px] text-slate-400 mt-1 font-medium hidden sm:block">
+                            Mengubah data untuk: <span className="text-slate-900 font-bold">{room.name}</span>
                         </p>
                     </div>
                 </div>
                 <button
                     type="button"
                     onClick={deleteRoom}
-                    className="flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-red-100 bg-red-50 text-red-600 text-[12px] font-semibold hover:bg-red-100 transition-colors"
+                    className="flex items-center gap-2 h-11 px-5 rounded-2xl border-[1.5px] border-rose-100 bg-rose-50 text-rose-600 text-[13px] font-bold hover:bg-rose-100 hover:border-rose-200 transition-all active:scale-95 shadow-sm shadow-rose-50"
                 >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Hapus
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Hapus Ruangan</span>
                 </button>
             </div>
 
             <form onSubmit={submit}>
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
 
                     {/* ── Left: Forms ── */}
-                    <div className="lg:col-span-8 space-y-5">
+                    <div className="lg:col-span-8 space-y-6">
 
                         {/* Update Informasi */}
-                        <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-4 sm:p-6">
-                            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
-                                <div className="h-9 w-9 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
-                                    <Building2 className="h-4 w-4 text-white" />
+                        <div className="bg-white rounded-[2.5rem] border-[1.5px] border-slate-200 shadow-sm p-6 sm:p-8 animate-row">
+                            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
+                                <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center shrink-0 shadow-lg shadow-slate-200">
+                                    <Building2 className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-[14px] font-semibold text-gray-800">Update Informasi</h2>
-                                    <p className="text-[11px] text-gray-400">Detail ruangan & kapasitas</p>
+                                    <h2 className="text-lg font-black text-slate-800">Update Informasi</h2>
+                                    <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Detail ruangan & kapasitas</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="name" className="text-[12px] font-semibold text-gray-700">Nama Ruangan</Label>
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name" className="text-[13px] font-bold text-slate-700 ml-1">Nama Ruangan</Label>
                                     <Input
                                         id="name"
                                         placeholder="Contoh: Ruang Aula Utama"
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
-                                        className="h-10 rounded-lg border-2 border-gray-200 bg-gray-50/50 focus:bg-white text-[13px] font-medium px-3"
+                                        className="h-12 rounded-2xl border-[1.5px] border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 text-[14px] font-bold px-4 shadow-sm transition-all"
                                     />
-                                    {errors.name && <p className="text-[11px] font-medium text-red-500">{errors.name}</p>}
+                                    {errors.name && <p className="text-[11px] font-bold text-rose-500 ml-1">{errors.name}</p>}
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="capacity" className="text-[12px] font-semibold text-gray-700">Kapasitas (Orang)</Label>
-                                    <div className="relative">
-                                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                <div className="space-y-2">
+                                    <Label htmlFor="capacity" className="text-[13px] font-bold text-slate-700 ml-1">Kapasitas (Orang)</Label>
+                                    <div className="relative group">
+                                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
                                         <Input
                                             id="capacity"
                                             type="number"
                                             placeholder="0"
                                             value={data.capacity}
                                             onChange={(e) => setData('capacity', e.target.value)}
-                                            className="h-10 pl-9 rounded-lg border-2 border-gray-200 bg-gray-50/50 focus:bg-white text-[13px] font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="h-12 pl-12 rounded-2xl border-[1.5px] border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 text-[14px] font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm transition-all"
                                         />
                                     </div>
-                                    {errors.capacity && <p className="text-[11px] font-medium text-red-500">{errors.capacity}</p>}
+                                    {errors.capacity && <p className="text-[11px] font-bold text-rose-500 ml-1">{errors.capacity}</p>}
                                 </div>
                             </div>
 
-                            <div className="mt-5 space-y-1.5">
-                                <Label htmlFor="status" className="text-[12px] font-semibold text-gray-700">Status Ruangan</Label>
-                                <div className="relative">
+                            <div className="mt-6 space-y-2">
+                                <Label htmlFor="status" className="text-[13px] font-bold text-slate-700 ml-1">Status Ruangan</Label>
+                                <div className="relative group">
                                     <select
                                         id="status"
                                         value={data.status}
                                         onChange={(e) => setData('status', e.target.value as Room['status'])}
-                                        className="w-full h-10 rounded-lg border-2 border-gray-200 bg-gray-50/50 focus:bg-white text-[13px] font-medium px-3 pr-9 outline-none appearance-none cursor-pointer focus:border-gray-400 transition-colors"
+                                        className="w-full h-12 rounded-2xl border-[1.5px] border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 text-[14px] font-bold px-4 pr-10 outline-none appearance-none cursor-pointer shadow-sm transition-all"
                                     >
                                         <option value="available">Tersedia (Available)</option>
                                         <option value="maintenance">Dalam Perbaikan (Maintenance)</option>
                                         <option value="unavailable">Penuh / Tidak Tersedia</option>
                                     </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
                                 </div>
-                                {errors.status && <p className="text-[11px] font-medium text-red-500">{errors.status}</p>}
+                                {errors.status && <p className="text-[11px] font-bold text-rose-500 ml-1">{errors.status}</p>}
                             </div>
                         </div>
 
                         {/* Fasilitas */}
-                        <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-4 sm:p-6">
-                            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
-                                <div className="h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                                    <ShieldCheck className="h-4 w-4 text-gray-500" />
+                        <div className="bg-white rounded-[2.5rem] border-[1.5px] border-slate-200 shadow-sm p-6 sm:p-8 animate-row" style={{ animationDelay: '100ms' }}>
+                            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
+                                <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+                                    <ShieldCheck className="h-5 w-5 text-slate-500" />
                                 </div>
                                 <div>
-                                    <h2 className="text-[14px] font-semibold text-gray-800">Fasilitas Ruangan</h2>
-                                    <p className="text-[11px] text-gray-400">Tambahkan AC, Proyektor, dll.</p>
+                                    <h2 className="text-lg font-black text-slate-800">Fasilitas Ruangan</h2>
+                                    <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Tambahkan perlengkapan yang tersedia</p>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 mb-4">
+                            <div className="flex gap-3 mb-6 group">
                                 <Input
                                     placeholder="Ketik fasilitas lalu tekan Enter..."
                                     value={facilityInput}
                                     onChange={(e) => setFacilityInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFacility())}
-                                    className="flex-1 h-10 rounded-lg border-2 border-gray-200 bg-gray-50/50 focus:bg-white text-[13px] font-medium px-3"
+                                    className="flex-1 h-12 rounded-2xl border-[1.5px] border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 text-[14px] font-bold px-4 shadow-sm transition-all"
                                 />
                                 <button
                                     type="button"
                                     onClick={addFacility}
-                                    className="h-10 w-10 rounded-lg bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0"
+                                    className="h-12 w-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-100 transition-all active:scale-90 shrink-0"
                                 >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-5 w-5" />
                                 </button>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2.5">
                                 {data.facilities.map((f, i) => (
-                                    <span key={i} className="flex items-center gap-2 h-8 pl-3 pr-2 bg-gray-900 text-white rounded-lg text-[12px] font-medium">
+                                    <span key={i} className="flex items-center gap-2 h-10 pl-4 pr-2 bg-slate-900 text-white rounded-xl text-[12px] font-black shadow-md shadow-slate-200 group animate-in zoom-in-95 duration-200">
                                         {f}
                                         <button
                                             type="button"
                                             onClick={() => removeFacility(i)}
-                                            className="h-5 w-5 rounded-md bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                                            className="h-6 w-6 rounded-lg bg-white/10 flex items-center justify-center hover:bg-rose-500 transition-colors"
                                         >
-                                            <X className="h-3 w-3" />
+                                            <X className="h-3.5 w-3.5" />
                                         </button>
                                     </span>
                                 ))}
                                 {data.facilities.length === 0 && (
-                                    <div className="w-full py-6 text-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                        <p className="text-[12px] text-gray-400 italic">Belum ada fasilitas ditambahkan.</p>
+                                    <div className="w-full py-10 text-center bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+                                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                                            <Plus className="h-5 w-5 text-slate-300" />
+                                        </div>
+                                        <p className="text-[13px] font-bold text-slate-400 italic">Belum ada fasilitas ditambahkan.</p>
                                     </div>
                                 )}
                             </div>
@@ -220,42 +227,42 @@ export default function Edit({ room }: Props) {
                     </div>
 
                     {/* ── Right: Photo + Actions ── */}
-                    <div className="lg:col-span-4 space-y-5">
+                    <div className="lg:col-span-4 space-y-6">
 
                         {/* Photo Upload */}
-                        <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-4 sm:p-5">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <ImageIcon className="h-4 w-4 text-gray-500" />
+                        <div className="bg-white rounded-[2.5rem] border-[1.5px] border-slate-200 shadow-sm p-6 animate-row" style={{ animationDelay: '200ms' }}>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
+                                    <ImageIcon className="h-4.5 w-4.5 text-slate-500" />
                                 </div>
-                                <h2 className="text-[14px] font-semibold text-gray-800">Foto Ruangan</h2>
+                                <h2 className="text-[15px] font-black text-slate-800">Foto Ruangan</h2>
                             </div>
 
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 className={cn(
-                                    'relative h-56 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group overflow-hidden',
+                                    'relative h-64 rounded-3xl border-[2px] border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-500 group overflow-hidden',
                                     imagePreview
-                                        ? 'border-transparent shadow-lg'
-                                        : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                                        ? 'border-transparent shadow-xl'
+                                        : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30'
                                 )}
                             >
                                 {imagePreview ? (
                                     <>
-                                        <img src={imagePreview} alt="Preview" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-900">
-                                                Klik untuk Ganti Foto
+                                        <img src={imagePreview} alt="Preview" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                                            <div className="bg-white px-5 py-2 rounded-2xl text-[12px] font-black text-slate-900 shadow-xl scale-90 group-hover:scale-100 transition-transform">
+                                                Ganti Foto
                                             </div>
                                         </div>
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center text-center p-6">
-                                        <div className="h-14 w-14 rounded-xl bg-gray-100 flex items-center justify-center mb-3 text-gray-300 group-hover:text-gray-500 group-hover:bg-gray-200 transition-all duration-300">
-                                            <Plus className="h-7 w-7" />
+                                        <div className="h-16 w-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 text-slate-300 group-hover:text-indigo-500 group-hover:bg-white group-hover:shadow-lg group-hover:shadow-indigo-100 transition-all duration-500 border border-slate-100">
+                                            <Plus className="h-8 w-8" />
                                         </div>
-                                        <p className="text-[13px] font-semibold text-gray-700">Upload Foto Baru</p>
-                                        <p className="text-[11px] text-gray-400 mt-1">JPG, PNG • Max 2MB</p>
+                                        <p className="text-[14px] font-black text-slate-700 group-hover:text-indigo-600 transition-colors">Upload Foto</p>
+                                        <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-widest">JPG, PNG • MAX 2MB</p>
                                     </div>
                                 )}
                                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
@@ -265,26 +272,33 @@ export default function Edit({ room }: Props) {
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); setImagePreview(null); setData('image', null); }}
-                                    className="mt-3 w-full h-9 rounded-lg text-red-500 hover:bg-red-50 text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                                    className="mt-4 w-full h-11 rounded-2xl text-rose-500 hover:bg-rose-50 text-[12px] font-bold flex items-center justify-center gap-2 transition-all active:scale-95 border border-transparent hover:border-rose-100"
                                 >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-4 w-4" />
                                     Hapus Foto
                                 </button>
                             )}
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="space-y-2">
+                        <div className="space-y-3 animate-row" style={{ animationDelay: '300ms' }}>
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full h-11 rounded-xl bg-gray-900 text-white text-[13px] font-semibold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors active:scale-95 disabled:opacity-60 shadow-sm"
+                                className="w-full h-14 rounded-2xl bg-slate-900 text-white text-[14px] font-black flex items-center justify-center gap-3 hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-100 transition-all active:scale-95 disabled:opacity-60 shadow-lg shadow-slate-200 group"
                             >
-                                <Save className="h-4 w-4" />
-                                {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                {processing ? (
+                                    'Menyimpan...'
+                                ) : (
+                                    <>
+                                        <Save className="h-5 w-5" />
+                                        Simpan Perubahan
+                                        <ArrowRight className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                                    </>
+                                )}
                             </button>
                             <Link href={route('rooms.show', room.id)} className="block">
-                                <button type="button" className="w-full h-10 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-[13px] font-medium transition-colors">
+                                <button type="button" className="w-full h-12 rounded-2xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 text-[14px] font-bold transition-all active:scale-95">
                                     Batal
                                 </button>
                             </Link>

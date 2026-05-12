@@ -6,27 +6,26 @@ use App\Models\Booking;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Carbon\Carbon;
 
 class BookingsExport implements FromCollection, WithHeadings, WithMapping
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
     public function collection()
     {
-        return Booking::with(['user', 'room'])->get();
+        return Booking::with(['room', 'user'])->latest()->get();
     }
 
     public function headings(): array
     {
         return [
             'ID',
-            'Peminjam',
             'Ruangan',
-            'Waktu Mulai',
-            'Waktu Selesai',
-            'Tujuan',
+            'Peminjam',
+            'Mulai',
+            'Selesai',
+            'Keperluan',
             'Status',
+            'Dibuat Pada',
         ];
     }
 
@@ -34,12 +33,18 @@ class BookingsExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             $booking->id,
-            $booking->user->name,
             $booking->room->name,
-            $booking->start_time,
-            $booking->end_time,
+            $booking->user->name,
+            Carbon::parse($booking->start_time)->format('d/m/Y H:i'),
+            Carbon::parse($booking->end_time)->format('d/m/Y H:i'),
             $booking->purpose,
-            $booking->status,
+            match($booking->status) {
+                'approved' => 'Disetujui',
+                'pending'  => 'Menunggu',
+                'rejected' => 'Ditolak',
+                default    => $booking->status,
+            },
+            $booking->created_at->format('d/m/Y H:i'),
         ];
     }
 }

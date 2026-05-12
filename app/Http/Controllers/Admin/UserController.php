@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -20,8 +20,18 @@ class UserController extends Controller
             abort(403);
         }
 
+        $query = User::with('roles');
+
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
+        }
+
         return Inertia::render('Admin/Users', [
-            'users' => User::with('roles')->get(),
+            'users' => $query->get(),
+            'filters' => $request->only(['search']),
         ]);
     }
 

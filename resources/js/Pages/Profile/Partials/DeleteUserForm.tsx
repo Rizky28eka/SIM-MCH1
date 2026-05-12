@@ -51,41 +51,26 @@ export default function DeleteUserForm({
 
     return (
         <section className={`space-y-6 ${className}`}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Delete Account
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Before deleting your account,
-                    please download any data or information that you wish to
-                    retain.
-                </p>
-            </header>
-
             <DangerButton onClick={confirmUserDeletion}>
-                Delete Account
+                Hapus Akun Permanen
             </DangerButton>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
-                <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Are you sure you want to delete your account?
+                <form onSubmit={deleteUser} className="p-10">
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-4">
+                        Apakah Anda yakin ingin menghapus akun?
                     </h2>
 
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
+                    <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
+                        Setelah akun Anda dihapus, semua sumber daya dan datanya akan dihapus secara permanen. 
+                        Silakan masukkan kata sandi Anda untuk mengonfirmasi bahwa Anda ingin menghapus akun secara permanen.
                     </p>
 
-                    <div className="mt-6">
+                    <div className="space-y-4">
                         <InputLabel
                             htmlFor="password"
-                            value="Password"
-                            className="sr-only"
+                            value="Konfirmasi Kata Sandi"
+                            className="text-slate-700 font-bold ml-1"
                         />
 
                         <TextInput
@@ -97,24 +82,24 @@ export default function DeleteUserForm({
                             onChange={(e) =>
                                 setData('password', e.target.value)
                             }
-                            className="mt-1 block w-3/4"
+                            className="block w-full px-4 py-3 bg-slate-50 border-slate-200 focus:bg-white focus:ring-red-500 rounded-xl transition-all"
                             isFocused
-                            placeholder="Password"
+                            placeholder="Masukkan kata sandi Anda"
                         />
 
                         <InputError
                             message={errors.password}
-                            className="mt-2"
+                            className="mt-2 ml-1"
                         />
                     </div>
 
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeModal}>
-                            Cancel
+                    <div className="mt-10 flex flex-col sm:flex-row justify-end gap-3">
+                        <SecondaryButton onClick={closeModal} className="justify-center">
+                            Batalkan
                         </SecondaryButton>
 
-                        <DangerButton className="ms-3" disabled={processing}>
-                            Delete Account
+                        <DangerButton disabled={processing} className="justify-center">
+                            Ya, Hapus Akun Saya
                         </DangerButton>
                     </div>
                 </form>

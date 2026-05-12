@@ -12,21 +12,38 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        $adminRole = \Spatie\Permission\Models\Role::create(['name' => 'admin']);
-        $userRole = \Spatie\Permission\Models\Role::create(['name' => 'pengguna']);
+        // Reset cached roles and permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $admin = \App\Models\User::create([
-            'name' => 'Admin SIM MCH',
-            'email' => 'admin@mch.com',
-            'password' => bcrypt('password'),
-        ]);
+        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'admin']);
+        $userRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'pengguna']);
+
+        // 1. Admin User
+        $admin = \App\Models\User::firstOrCreate(
+            ['email' => 'admin@mch.com'],
+            [
+                'name' => 'Admin SIM MCH',
+                'password' => bcrypt('password'),
+            ]
+        );
         $admin->assignRole($adminRole);
 
-        $user = \App\Models\User::create([
-            'name' => 'John Doe',
-            'email' => 'user@mch.com',
-            'password' => bcrypt('password'),
-        ]);
-        $user->assignRole($userRole);
+        // 2. 15 Dummy Users
+        $names = [
+            'Andi Pratama', 'Budi Santoso', 'Citra Lestari', 'Dewi Sartika', 'Eko Wijaya',
+            'Fajar Ramadhan', 'Gita Permata', 'Hadi Kusuma', 'Indah Putri', 'Joko Susilo',
+            'Kurnia Sari', 'Lutfi Hakim', 'Maya Kartika', 'Novi Rahayu', 'Oky Saputra'
+        ];
+
+        foreach ($names as $index => $name) {
+            $user = \App\Models\User::firstOrCreate(
+                ['email' => 'user' . ($index + 1) . '@mch.com'],
+                [
+                    'name' => $name,
+                    'password' => bcrypt('password'),
+                ]
+            );
+            $user->assignRole($userRole);
+        }
     }
 }

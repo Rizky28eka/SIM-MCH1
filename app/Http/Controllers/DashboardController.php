@@ -2,150 +2,100 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Room;
 use App\Models\Booking;
-use App\Models\User;
-use Inertia\Inertia;
+use App\Models\Room;
 use Carbon\Carbon;
+use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // ── Overview Stats ─────────────────────────────────────
-        $totalRooms     = Room::count();
-        $totalBookings  = Booking::count();
-        $pendingBookings  = Booking::where('status', 'pending')->count();
-        $approvedBookings = Booking::where('status', 'approved')->count();
-        $rejectedBookings = Booking::where('status', 'rejected')->count();
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $isAdmin = $user->hasRole('admin');
 
-        // This month vs last month
-        $thisMonth = Booking::whereMonth('created_at', now()->month)
-                            ->whereYear('created_at', now()->year)->count();
-        $lastMonth = Booking::whereMonth('created_at', now()->subMonth()->month)
-                            ->whereYear('created_at', now()->subMonth()->year)->count();
-        $monthDelta = $lastMonth > 0
-            ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1)
-            : ($thisMonth > 0 ? 100 : 0);
+        // ── Parsing Filter Tanggal ────────────────────────────────
+        $startDate = $request->input('from') 
+            ? Carbon::parse($request->input('from'))->startOfDay() 
+            : now()->startOfMonth()->startOfDay();
+            
+        $endDate = $request->input('to') 
+            ? Carbon::parse($request->input('to'))->endOfDay() 
+            : now()->endOfDay();
 
-        // ── Room Usage (bar chart overview) ─────────────────────
-        $roomUsage = Room::withCount(['bookings' => function ($q) {
-            $q->where('status', 'approved');
-        }])->get(['id', 'name'])->map(fn($r) => [
+        // ── Statistik Utama (Role-Scoped) ────────────────────────
+        $roomQuery = Room::query();
+        $bookingQuery = Booking::whereBetween('created_at', [$startDate, $endDate]);
+        
+        if (!$isAdmin) {
+            $bookingQuery->where('user_id', $user->id);
+        }
+
+        $totalRooms      = Room::count();
+        $totalBookings   = (clone $bookingQuery)->count();
+        $pendingBookings = (clone $bookingQuery)->where('status', 'pending')->count();
+        $approvedBookings= (clone $bookingQuery)->where('status', 'approved')->count();
+
+        // ── Perhitungan Delta ────────────────────────────────────
+        $daysDiff = $startDate->diffInDays($endDate) + 1;
+        $prevStartDate = $startDate->copy()->subDays($daysDiff);
+        $prevEndDate = $endDate->copy()->subDays($daysDiff);
+
+        $prevPeriodQuery = Booking::whereBetween('created_at', [$prevStartDate, $prevEndDate]);
+        if (!$isAdmin) {
+            $prevPeriodQuery->where('user_id', $user->id);
+        }
+        $prevPeriodCount = $prevPeriodQuery->count();
+
+        $monthDelta = 0;
+        if ($prevPeriodCount > 0) {
+            $monthDelta = round((($totalBookings - $prevPeriodCount) / $prevPeriodCount) * 100);
+        } elseif ($totalBookings > 0) {
+            $monthDelta = 100;
+        }
+
+        // ── Statistik Penggunaan Ruangan ─────────────────────────
+        $roomUsageQuery = Room::withCount(['bookings' => function($q) use ($startDate, $endDate, $isAdmin, $user) {
+            $q->whereBetween('created_at', [$startDate, $endDate]);
+            if (!$isAdmin) {
+                $q->where('user_id', $user->id);
+            }
+        }]);
+        
+        $roomUsage = $roomUsageQuery->get()->map(fn($r) => [
             'name'  => $r->name,
             'count' => $r->bookings_count,
-        ])->values();
+        ]);
 
-        // ── Recent Bookings ──────────────────────────────────────
-        $recentBookings = Booking::with(['user', 'room'])
-            ->latest()->take(5)->get()
-            ->map(fn($b) => [
-                'id'         => $b->id,
-                'room'       => ['name' => $b->room->name ?? '-'],
-                'user'       => ['name' => $b->user->name ?? '-'],
-                'start_time' => $b->start_time,
-                'status'     => $b->status,
-            ]);
-
-        // ── Analytics: Monthly Trend (12 months) ────────────────
-        $monthlyTrend = collect(range(1, 12))->map(function ($month) {
-            $year = now()->year;
-            $total    = Booking::whereYear('created_at', $year)->whereMonth('created_at', $month)->count();
-            $approved = Booking::whereYear('created_at', $year)->whereMonth('created_at', $month)->where('status', 'approved')->count();
-            $rejected = Booking::whereYear('created_at', $year)->whereMonth('created_at', $month)->where('status', 'rejected')->count();
-            return [
-                'bulan'      => Carbon::create($year, $month)->locale('id')->monthName,
-                'bulanShort' => Carbon::create($year, $month)->format('M'),
-                'peminjaman' => $total,
-                'disetujui'  => $approved,
-                'ditolak'    => $rejected,
-            ];
-        })->values();
-
-        // ── Analytics: Status Pie ─────────────────────────────────
-        $pieData = [
-            ['name' => 'Disetujui', 'value' => $approvedBookings, 'color' => '#0F172A'],
-            ['name' => 'Pending',   'value' => $pendingBookings,  'color' => '#94a3b8'],
-            ['name' => 'Ditolak',   'value' => $rejectedBookings, 'color' => '#e2e8f0'],
-        ];
-
-        // ── Analytics: KPI Cards ─────────────────────────────────
-        $avgPerMonth = $monthlyTrend->avg('peminjaman');
-        $peakMonth   = $monthlyTrend->sortByDesc('peminjaman')->first();
-        $approvalRate = $totalBookings > 0
-            ? round(($approvedBookings / $totalBookings) * 100) : 0;
-        $rejectRate   = $totalBookings > 0
-            ? round(($rejectedBookings / $totalBookings) * 100) : 0;
-
-        $analytics = [
-            'monthlyTrend'  => $monthlyTrend,
-            'pieData'       => $pieData,
-            'avgPerMonth'   => round($avgPerMonth, 1),
-            'approvalRate'  => $approvalRate,
-            'rejectRate'    => $rejectRate,
-            'peakMonth'     => $peakMonth ? $peakMonth['bulanShort'] : '-',
-            'peakCount'     => $peakMonth ? $peakMonth['peminjaman'] : 0,
-        ];
-
-        // ── Laporan: grouping per bulan + quarter ─────────────────
-        $laporan = $this->buildLaporan();
-
-        // ── Notifikasi: dihapus dari dashboard ──
+        // ── Aktivitas Terkini ───────────────────────────────────
+        $recentBookingsQuery = Booking::with(['user', 'room'])
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->latest();
+            
+        if (!$isAdmin) {
+            $recentBookingsQuery->where('user_id', $user->id);
+        }
+        
+        $recentBookings = $recentBookingsQuery->take(5)->get();
 
         return Inertia::render('Dashboard', [
+            'isAdmin' => $isAdmin,
+            'filters' => [
+                'from' => $startDate->toDateString(),
+                'to'   => $endDate->toDateString(),
+            ],
             'stats' => [
                 'totalRooms'      => $totalRooms,
                 'totalBookings'   => $totalBookings,
                 'pendingBookings' => $pendingBookings,
                 'approvedBookings'=> $approvedBookings,
                 'monthDelta'      => $monthDelta,
-                'thisMonth'       => $thisMonth,
+                'thisMonth'       => $totalBookings,
             ],
             'roomUsage'      => $roomUsage,
             'recentBookings' => $recentBookings,
-            'analytics'      => $analytics,
-            'laporan'        => $laporan,
         ]);
     }
-
-    // ─────────────────────────────────────────────────────────────
-    private function buildLaporan(): array
-    {
-        $reports = [];
-        $now     = now();
-
-        // Monthly reports: last 6 months
-        for ($i = 0; $i < 6; $i++) {
-            $date  = $now->copy()->subMonths($i);
-            $start = $date->copy()->startOfMonth();
-            $end   = $date->copy()->endOfMonth();
-            $total = Booking::whereBetween('created_at', [$start, $end])->count();
-            $isCurrentMonth = $i === 0;
-            $reports[] = [
-                'id'      => "month-{$date->format('Y-m')}",
-                'judul'   => 'Laporan Peminjaman ' . $date->locale('id')->translatedFormat('F Y'),
-                'periode' => $start->format('j') . '–' . $end->format('j') . ' ' . $date->locale('id')->translatedFormat('M Y'),
-                'total'   => $total,
-                'status'  => $isCurrentMonth && $end->isFuture() ? 'proses' : 'selesai',
-                'file'    => $isCurrentMonth && $end->isFuture() ? '' : "laporan-{$date->format('M-Y')}.pdf",
-            ];
-        }
-
-        // Q1 quarterly
-        $q1Start = Carbon::create($now->year, 1, 1)->startOfDay();
-        $q1End   = Carbon::create($now->year, 3, 31)->endOfDay();
-        $q1Total = Booking::whereBetween('created_at', [$q1Start, $q1End])->count();
-        $reports[] = [
-            'id'      => "q1-{$now->year}",
-            'judul'   => "Laporan Q1 {$now->year}",
-            'periode' => "Jan – Mar {$now->year}",
-            'total'   => $q1Total,
-            'status'  => 'selesai',
-            'file'    => "laporan-q1-{$now->year}.pdf",
-        ];
-
-        return $reports;
-    }
-
 }

@@ -11,6 +11,7 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'rooms' => \App\Models\Room::all(),
     ]);
 });
 
@@ -21,12 +22,15 @@ use App\Http\Controllers\ExportController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/calendar', [\App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
     
     Route::resource('rooms', RoomController::class);
     
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('bookings/create', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
+    Route::post('bookings/{booking}/upload-verification', [BookingController::class, 'uploadVerification'])->name('bookings.upload-verification');
     Route::get('bookings/{booking}/download', [BookingController::class, 'download'])->name('bookings.download');
     Route::get('export/bookings/excel', [ExportController::class, 'excel'])->name('export.bookings.excel');
     Route::get('export/bookings/pdf', [ExportController::class, 'pdf'])->name('export.bookings.pdf');
@@ -36,6 +40,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
         Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
     });
+
+    Route::post('/notifications/mark-as-read', function (\Illuminate\Http\Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+        return back();
+    })->name('notifications.mark-as-read');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -6,18 +6,35 @@ use Illuminate\Http\Request;
 
 use App\Models\Booking;
 use App\Models\Room;
+use App\Models\User;
+use App\Notifications\BookingNotification;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class BookingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
         
         $query = Booking::with(['room', 'user']);
+
+        // Search logic
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('purpose', 'like', "%{$search}%")
+                  ->orWhereHas('room', function($rq) use ($search) {
+                      $rq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('user', function($uq) use ($search) {
+                      $uq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
 
         // Admin sees all, users see theirs
         if (!$user->hasRole('admin')) {
@@ -26,8 +43,16 @@ class BookingController extends Controller
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $query->latest()->get(),
-            'rooms' => Room::where('status', 'available')->get(),
             'isAdmin' => $user->hasRole('admin'),
+            'filters' => $request->only(['search']),
+        ]);
+    }
+
+    public function create(Request $request)
+    {
+        return Inertia::render('Bookings/Create', [
+            'rooms' => Room::where('status', 'available')->get(),
+            'selected_room_id' => $request->room_id,
         ]);
     }
 
@@ -38,7 +63,6 @@ class BookingController extends Controller
             'start_time' => 'required|date|after:now',
             'end_time' => 'required|date|after:start_time',
             'purpose' => 'required|string|max:255',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:2048',
         ]);
 
         // Conflict detection
@@ -58,20 +82,26 @@ class BookingController extends Controller
             return redirect()->back()->withErrors(['error' => 'Ruangan sudah dipesan pada waktu tersebut.']);
         }
 
-        $documentPath = null;
-        if ($request->hasFile('document')) {
-            $documentPath = $request->file('document')->store('bookings', 'public');
-        }
-
-        Booking::create([
+        $booking = Booking::create([
             'user_id' => Auth::id(),
             'room_id' => $request->room_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'purpose' => $request->purpose,
-            'document_path' => $documentPath,
             'status' => 'pending',
         ]);
+
+        // Notify Admins
+        $admins = User::role('admin')->get();
+        if ($admins->isEmpty()) {
+            $admins = User::where('email', 'admin@mch.com')->get();
+        }
+        Notification::send($admins, new BookingNotification(
+            $booking,
+            'Pengajuan Baru',
+            Auth::user()->name . ' mengajukan peminjaman ' . $booking->room->name,
+            'info'
+        ));
 
         return redirect()->route('bookings.index')->with('message', 'Pemesanan berhasil diajukan.');
     }
@@ -109,6 +139,35 @@ class BookingController extends Controller
 
         $booking->update($validated);
 
+        // Notify User
+        $statusLabel = $booking->status === 'approved' ? 'Disetujui' : 'Ditolak';
+        $booking->user->notify(new BookingNotification(
+            $booking,
+            'Status Peminjaman',
+            'Peminjaman Anda untuk ' . $booking->room->name . ' telah ' . $statusLabel,
+            $booking->status === 'approved' ? 'success' : 'error'
+        ));
+
         return redirect()->back()->with('message', 'Status peminjaman diperbarui.');
+    }
+
+    public function uploadVerification(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'verification_document' => 'required|file|mimes:pdf,jpg,png,jpeg|max:2048',
+        ]);
+
+        if ($booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($booking->status !== 'approved') {
+            return redirect()->back()->withErrors(['error' => 'Berkas hanya dapat diunggah setelah disetujui.']);
+        }
+
+        $path = $request->file('verification_document')->store('verifications', 'public');
+        $booking->update(['verification_path' => $path]);
+
+        return redirect()->back()->with('message', 'Berkas verifikasi berhasil diunggah.');
     }
 }

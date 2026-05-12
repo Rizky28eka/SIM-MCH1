@@ -11,14 +11,21 @@ use Illuminate\Support\Facades\Auth;
 
 class RoomController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        
+        $query = Room::query();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
 
         return Inertia::render('Rooms/Index', [
-            'rooms' => Room::all(),
+            'rooms' => $query->get(),
             'canManage' => $user->hasRole('admin'),
+            'filters' => $request->only(['search']),
         ]);
     }
 

@@ -1,13 +1,43 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
-import { Download, CalendarRange, FileSpreadsheet, X, ChevronDown } from "lucide-react";
+import { Head, Link, router } from "@inertiajs/react";
+import {
+    CalendarRange,
+    Building2,
+    Calendar as CalendarIcon,
+    CheckCircle2,
+    Clock,
+    CalendarDays,
+    XCircle,
+    ChevronDown,
+    ArrowRight,
+} from "lucide-react";
+import {
+    ResponsiveContainer,
+    Cell,
+    PieChart,
+    Pie,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import OverviewTab from "./Dashboard/OverviewTab";
-import AnalyticsTab from "./Dashboard/AnalyticsTab";
-import LaporanTab from "./Dashboard/LaporanTab";
+import { useState, useEffect } from "react";
+import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 
-// ── Types ────────────────────────────────────────────────────────
+// ── Types & Interfaces ──────────────────────────────────────────
 interface Stats {
     totalRooms: number;
     totalBookings: number;
@@ -17,7 +47,10 @@ interface Stats {
     thisMonth: number;
 }
 
-interface RoomUsage { name: string; count: number; }
+interface RoomUsage {
+    name: string;
+    count: number;
+}
 
 interface RecentBooking {
     id: number;
@@ -27,238 +60,391 @@ interface RecentBooking {
     status: string;
 }
 
-interface MonthlyTrend {
-    bulan: string;
-    bulanShort: string;
-    peminjaman: number;
-    disetujui: number;
-    ditolak: number;
-}
-
-interface PieEntry { name: string; value: number; color: string; }
-
-interface Analytics {
-    monthlyTrend: MonthlyTrend[];
-    pieData: PieEntry[];
-    avgPerMonth: number;
-    approvalRate: number;
-    rejectRate: number;
-    peakMonth: string;
-    peakCount: number;
-}
-
-interface LaporanItem {
-    id: string;
-    judul: string;
-    periode: string;
-    total: number;
-    status: string;
-    file: string;
-    year?: number;
-    month?: number;
-}
-
 interface Props {
     stats: Stats;
     roomUsage: RoomUsage[];
     recentBookings: RecentBooking[];
-    analytics: Analytics;
-    laporan: LaporanItem[];
+    isAdmin: boolean;
+    filters: {
+        from: string;
+        to: string;
+    };
 }
 
-const MONTHS = [
-    "Januari","Februari","Maret","April","Mei","Juni",
-    "Juli","Agustus","September","Oktober","November","Desember",
-];
+// ── Constants ───────────────────────────────────────────────────
+const CHART_COLORS = ["#26A69A", "#E9AF2F", "#A02525", "#333333", "#4DB6AC"];
+const DONUT_COLORS = {
+    approved: "#26A69A", // Teal
+    pending:  "#E9AF2F", // Gold
+    rejected: "#A02525", // Maroon
+};
 
-// ── Export Modal Component ────────────────────────────────────────
-function ExportModal({ onClose }: { onClose: () => void }) {
-    const now = new Date();
-    const [month, setMonth] = useState(now.getMonth() + 1);
-    const [year,  setYear]  = useState(now.getFullYear());
-    const [mode,  setMode]  = useState<"all" | "period">("period");
-    const [loading, setLoading] = useState(false);
+const STATUS_BADGE: Record<string, string> = {
+    approved: "bg-green-50 text-green-700",
+    pending: "bg-yellow-50 text-yellow-700",
+    rejected: "bg-red-50 text-red-700",
+};
 
-    const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
+const STATUS_LABEL: Record<string, string> = {
+    approved: "Disetujui",
+    pending: "Menunggu",
+    rejected: "Ditolak",
+};
 
-    const doExport = (type: "excel" | "period") => {
-        setLoading(true);
-        let url = "";
-        if (type === "excel" && mode === "all") {
-            url = route("export.bookings.excel");
-        } else {
-            const label = `Laporan-${MONTHS[month - 1]}-${year}`;
-            url = route("export.bookings.period") + `?year=${year}&month=${month}&label=${encodeURIComponent(label)}`;
+const tooltipStyle = {
+    borderRadius: "12px",
+    border: "1px solid #f1f5f9",
+    boxShadow: "0 4px 24px rgb(0 0 0 / 0.08)",
+    fontSize: "12px",
+};
+
+// ── Main Dashboard Function ─────────────────────────────────────
+export default function Dashboard({
+    stats,
+    roomUsage,
+    recentBookings,
+    isAdmin,
+    filters,
+}: Props) {
+    const [date, setDate] = useState<DateRange | undefined>({
+        from: parseISO(filters.from),
+        to: parseISO(filters.to),
+    });
+
+    // Update URL when date changes
+    const handleSelect = (range: DateRange | undefined) => {
+        setDate(range);
+        if (range?.from && range?.to) {
+            router.get(
+                route("dashboard"),
+                {
+                    from: format(range.from, "yyyy-MM-dd"),
+                    to: format(range.to, "yyyy-MM-dd"),
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    only: ["stats", "roomUsage", "recentBookings", "filters"],
+                },
+            );
         }
-        window.location.href = url;
-        setTimeout(() => { setLoading(false); onClose(); }, 1000);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-2xl border-2 border-gray-200 shadow-2xl w-full max-w-md p-6 animate-row">
-                <div className="flex items-center justify-between mb-5">
-                    <div>
-                        <h3 className="text-[15px] font-bold text-gray-900">Export Laporan</h3>
-                        <p className="text-[12px] text-gray-400 mt-0.5">Unduh data peminjaman sebagai CSV</p>
-                    </div>
-                    <button onClick={onClose} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
+    const statCards = isAdmin ? [
+        {
+            title: "Total Ruangan",
+            value: stats.totalRooms,
+            label: "Ruangan Terdaftar",
+            trend: "+2",
+            isUp: true,
+            icon: Building2,
+            color: "text-teal-600 bg-teal-50"
+        },
+        {
+            title: "Total Peminjaman",
+            value: stats.totalBookings,
+            label: "Periode terpilih",
+            trend: `${stats.monthDelta >= 0 ? "+" : ""}${stats.monthDelta}%`,
+            isUp: stats.monthDelta >= 0,
+            icon: CalendarIcon,
+            color: "text-slate-600 bg-slate-50"
+        },
+        {
+            title: "Menunggu Approval",
+            value: stats.pendingBookings,
+            label: "Perlu diverifikasi",
+            trend: "Action",
+            isUp: false,
+            icon: Clock,
+            color: "text-amber-600 bg-amber-50"
+        },
+        {
+            title: "Disetujui / Aktif",
+            value: stats.approvedBookings,
+            label: "Jadwal berjalan",
+            trend: "Live",
+            isUp: true,
+            icon: CheckCircle2,
+            color: "text-emerald-600 bg-emerald-50"
+        },
+    ] : [
+        {
+            title: "Peminjaman Saya",
+            value: stats.totalBookings,
+            label: "Total pengajuan",
+            trend: "Total",
+            isUp: true,
+            icon: CalendarIcon,
+            color: "text-teal-600 bg-teal-50"
+        },
+        {
+            title: "Menunggu Approval",
+            value: stats.pendingBookings,
+            label: "Dalam proses",
+            trend: "Wait",
+            isUp: false,
+            icon: Clock,
+            color: "text-amber-600 bg-amber-50"
+        },
+        {
+            title: "Disetujui",
+            value: stats.approvedBookings,
+            label: "Siap digunakan",
+            trend: "Ready",
+            isUp: true,
+            icon: CheckCircle2,
+            color: "text-emerald-600 bg-emerald-50"
+        },
+        {
+            title: "Ditolak",
+            value: stats.totalBookings - stats.approvedBookings - stats.pendingBookings,
+            label: "Tidak disetujui",
+            trend: "Rejected",
+            isUp: false,
+            icon: XCircle,
+            color: "text-rose-600 bg-rose-50"
+        },
+    ];
 
-                <div className="grid grid-cols-2 gap-2 mb-5">
-                    {(["period", "all"] as const).map(m => (
-                        <button
-                            key={m}
-                            onClick={() => setMode(m)}
-                            className={cn(
-                                "py-2.5 px-3 rounded-xl border-2 text-[12px] font-semibold transition-all",
-                                mode === m
-                                    ? "border-gray-900 bg-gray-900 text-white"
-                                    : "border-gray-200 text-gray-600 hover:border-gray-300"
-                            )}
-                        >
-                            {m === "period" ? "Per Periode" : "Semua Data"}
-                        </button>
-                    ))}
-                </div>
-
-                {mode === "period" && (
-                    <div className="grid grid-cols-2 gap-3 mb-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-gray-600">Bulan</label>
-                            <div className="relative">
-                                <select
-                                    value={month}
-                                    onChange={e => setMonth(Number(e.target.value))}
-                                    className="w-full h-10 rounded-lg border-2 border-gray-200 bg-gray-50/50 text-[13px] font-medium px-3 pr-8 outline-none appearance-none cursor-pointer"
-                                >
-                                    {MONTHS.map((m, i) => (
-                                        <option key={i} value={i + 1}>{m}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-gray-600">Tahun</label>
-                            <div className="relative">
-                                <select
-                                    value={year}
-                                    onChange={e => setYear(Number(e.target.value))}
-                                    className="w-full h-10 rounded-lg border-2 border-gray-200 bg-gray-50/50 text-[13px] font-medium px-3 pr-8 outline-none appearance-none cursor-pointer"
-                                >
-                                    {years.map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 mb-5">
-                    <p className="text-[12px] text-gray-500">
-                        {mode === "period"
-                            ? `Mengekspor data peminjaman bulan ${MONTHS[month - 1]} ${year}`
-                            : "Mengekspor seluruh data peminjaman"}
-                    </p>
-                </div>
-
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => doExport(mode === "all" ? "excel" : "period")}
-                        disabled={loading}
-                        className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-60"
-                    >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        {loading ? "Mengunduh..." : "Download CSV"}
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="h-10 px-4 rounded-xl border-2 border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
-                        Batal
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ── Main Dashboard ────────────────────────────────────────────────
-export default function Dashboard({ stats, roomUsage, recentBookings, analytics, laporan }: Props) {
-    const [showExport, setShowExport] = useState(false);
-
-    const now = new Date();
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-    const endMonth = now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    const pieData = [
+        { name: 'Disetujui', value: stats.approvedBookings, color: DONUT_COLORS.approved },
+        { name: 'Pending', value: stats.pendingBookings, color: DONUT_COLORS.pending },
+        { name: 'Ditolak', value: stats.totalBookings - stats.approvedBookings - stats.pendingBookings, color: DONUT_COLORS.rejected },
+    ].filter(d => d.value > 0);
 
     return (
         <AuthenticatedLayout>
             <Head title="Dashboard" />
 
-            {/* ── Export Modal ── */}
-            {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+                <div className="animate-row">
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                        {isAdmin ? 'System Dashboard' : 'My Dashboard'}
+                    </h1>
+                    <p className="text-[13px] font-bold text-slate-400 mt-1 flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                        {isAdmin 
+                            ? 'Overview of Makassar Creative Hub resource allocation.' 
+                            : 'Monitor your room reservation status and history.'}
+                    </p>
+                </div>
 
-            {/* ── Page Header ── */}
-            <div className="flex flex-col gap-4 mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-                        <p className="text-[13px] text-gray-400 mt-1">Pantau penggunaan ruangan dan laporan terbaru dalam satu halaman.</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-gray-200 bg-white text-[12px] text-gray-600 font-medium shadow-sm">
-                            <CalendarRange className="h-3.5 w-3.5 text-gray-400" />
-                            <span className="hidden sm:inline">{startMonth} – {endMonth}</span>
-                            <span className="sm:hidden">{now.toLocaleDateString("id-ID", { month: "short", year: "numeric" })}</span>
-                        </div>
-                        <button
-                            onClick={() => setShowExport(true)}
-                            className="flex items-center gap-2 h-9 px-3 sm:px-4 rounded-lg bg-gray-900 text-white text-[12px] font-semibold hover:bg-gray-800 transition-colors active:scale-95 shadow-sm"
+                <div className="flex items-center gap-2 shrink-0 animate-row">
+                    <Popover>
+                        <PopoverTrigger className="flex items-center gap-3 h-11 px-5 rounded-2xl border-[1.5px] border-slate-200 bg-white text-[13px] text-slate-700 font-black shadow-sm hover:border-teal-400 hover:shadow-md transition-all active:scale-95 group outline-none">
+                            <CalendarRange className="h-4 w-4 text-slate-400 group-hover:text-teal-500" />
+                            {date?.from ? (
+                                date.to ? (
+                                    <span className="truncate">
+                                        {format(date.from, "d MMM", { locale: id })} – {format(date.to, "d MMM yyyy", { locale: id })}
+                                    </span>
+                                ) : (
+                                    <span className="truncate">{format(date.from, "d MMM yyyy", { locale: id })}</span>
+                                )
+                            ) : (
+                                <span>Pilih Tanggal</span>
+                            )}
+                            <ChevronDown className="h-4 w-4 text-slate-300" />
+                        </PopoverTrigger>
+                        <PopoverContent
+                            className="w-auto p-0 border-2 border-slate-200 rounded-[2rem] shadow-2xl bg-white z-[100]"
+                            align="end"
                         >
-                            <Download className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Download</span>
-                        </button>
-                    </div>
+                            <Calendar
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={handleSelect}
+                                numberOfMonths={1}
+                                locale={id}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
 
-            {/* ── All Sections Joined ── */}
-            <div className="space-y-10 pb-10">
-                {/* 1. Overview Section (Stats & Primary Charts) */}
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-1 w-1 rounded-full bg-gray-900" />
-                        <h2 className="text-[14px] font-bold text-gray-900 uppercase tracking-wider">Ringkasan Statistik</h2>
+            <div className="space-y-8 pb-10">
+                {/* ── STAT CARDS ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {statCards.map((s, i) => (
+                        <div
+                            key={i}
+                            className="bg-white rounded-[2rem] border-[1.5px] border-slate-200 shadow-sm p-6 flex flex-col gap-6 animate-row hover:border-teal-200 hover:shadow-md transition-all duration-300"
+                            style={{ animationDelay: `${i * 60}ms` }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className={cn("h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border", s.color)}>
+                                    <s.icon className="h-5 w-5" />
+                                </div>
+                                <div className={cn(
+                                    "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border",
+                                    s.isUp ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100"
+                                )}>
+                                    {s.trend}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">
+                                    {s.title}
+                                </p>
+                                <div className="text-3xl font-black text-slate-900 tracking-tight">
+                                    {s.value.toLocaleString()}
+                                </div>
+                                <p className="text-[11px] font-bold text-slate-400 mt-1">
+                                    {s.label}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* ── CHARTS & ACTIVITY ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Bar Chart Card */}
+                    <div className="lg:col-span-2 bg-white rounded-[2.5rem] border-[1.5px] border-slate-200 shadow-sm overflow-hidden animate-row" style={{ animationDelay: '250ms' }}>
+                        <div className="p-8 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-[16px] font-black text-slate-900 tracking-tight">Traffic Penggunaan</h3>
+                                <p className="text-[12px] font-bold text-slate-400 mt-1">Distribusi peminjaman per ruangan</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-teal-50 text-teal-600 text-[10px] font-black uppercase px-3 py-1">Monthly View</Badge>
+                            </div>
+                        </div>
+                        <div className="p-8">
+                            <div className="h-[320px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={roomUsage} barGap={12}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontWeight: 700 }} dy={10} />
+                                        <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontWeight: 700 }} width={28} />
+                                        <Tooltip 
+                                            contentStyle={tooltipStyle} 
+                                            cursor={{ fill: "#f8fafc", radius: 12 }}
+                                            itemStyle={{ fontSize: "12px", fontWeight: "800", color: "#26A69A" }}
+                                        />
+                                        <Bar dataKey="count" radius={[10, 10, 0, 0]} barSize={40}>
+                                            {roomUsage.map((_, index) => (
+                                                <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} fillOpacity={0.9} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
-                    <OverviewTab stats={stats} roomUsage={roomUsage} recentBookings={recentBookings} />
-                </section>
 
-                <div className="border-t border-gray-100" />
-
-                {/* 2. Analytics Section (Trends & Distribution) */}
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-1 w-1 rounded-full bg-gray-900" />
-                        <h2 className="text-[14px] font-bold text-gray-900 uppercase tracking-wider">Analisis Data</h2>
+                    {/* Donut Chart Card */}
+                    <div className="bg-white rounded-[2.5rem] border-[1.5px] border-slate-200 shadow-sm overflow-hidden animate-row" style={{ animationDelay: '300ms' }}>
+                        <div className="p-8 border-b border-slate-50">
+                            <h3 className="text-[16px] font-black text-slate-900 tracking-tight">Status Distribution</h3>
+                            <p className="text-[12px] font-bold text-slate-400 mt-1">Proporsi status peminjaman</p>
+                        </div>
+                        <div className="p-8">
+                            <div className="h-[240px] relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={8}
+                                            dataKey="value"
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={tooltipStyle} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <p className="text-2xl font-black text-slate-900">{stats.totalBookings}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                                </div>
+                            </div>
+                            <div className="mt-8 space-y-3">
+                                {pieData.map((d, i) => (
+                                    <div key={i} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
+                                            <span className="text-[12px] font-bold text-slate-600">{d.name}</span>
+                                        </div>
+                                        <span className="text-[12px] font-black text-slate-900">{Math.round((d.value / stats.totalBookings) * 100)}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <AnalyticsTab analytics={analytics} />
-                </section>
 
-                <div className="border-t border-gray-100" />
-
-                {/* 3. Laporan Section (Report History) */}
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-1 w-1 rounded-full bg-gray-900" />
-                        <h2 className="text-[14px] font-bold text-gray-900 uppercase tracking-wider">Arsip Laporan</h2>
+                    {/* Recent Activity Card */}
+                    <div className="lg:col-span-3 bg-white rounded-[2.5rem] border-[1.5px] border-slate-200 shadow-sm overflow-hidden animate-row" style={{ animationDelay: '350ms' }}>
+                        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-[16px] font-black text-slate-900 tracking-tight">Recent Activity</h3>
+                                <p className="text-[12px] font-bold text-slate-400 mt-1">Log peminjaman terbaru</p>
+                            </div>
+                            <Link 
+                                href={route('bookings.index')} 
+                                className="text-[11px] font-black text-teal-600 uppercase tracking-widest hover:text-teal-700 transition-colors"
+                            >
+                                Lihat Semua
+                            </Link>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-slate-50/50">
+                                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">User & Room</th>
+                                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Time</th>
+                                        <th className="px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {recentBookings.map((b, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/30 transition-colors group">
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs group-hover:bg-teal-600 group-hover:text-white transition-all duration-500">
+                                                        {b.user.name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[13px] font-black text-slate-900 leading-tight">{b.room.name}</p>
+                                                        <p className="text-[11px] font-bold text-slate-400 mt-1">{b.user.name}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-2 text-[12px] font-black text-slate-700">
+                                                    <CalendarIcon className="h-3.5 w-3.5 text-teal-500" />
+                                                    {format(parseISO(b.start_time), 'dd MMM yyyy')}
+                                                </div>
+                                                <p className="text-[11px] font-bold text-slate-400 mt-1 ml-5">{format(parseISO(b.start_time), 'HH:mm')}</p>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <span className={cn(
+                                                    "inline-flex items-center gap-1.5 text-[9px] font-black px-3 py-1.5 rounded-full border uppercase tracking-wider",
+                                                    STATUS_BADGE[b.status] ?? "bg-slate-50 text-slate-500 border-slate-100"
+                                                )}>
+                                                    {STATUS_LABEL[b.status] ?? b.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <button className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-teal-600 hover:border-teal-200 transition-all">
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <LaporanTab laporan={laporan} onExport={() => setShowExport(true)} />
-                </section>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

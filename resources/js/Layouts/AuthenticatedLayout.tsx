@@ -1,12 +1,12 @@
 import ApplicationLogo from '@/components/ApplicationLogo';
 import Dropdown from '@/components/Dropdown';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
 import {
     LayoutDashboard, Building2, CalendarCheck, Users,
     Settings, Search, Bell, LogOut, User, ChevronRight,
     X, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen,
-    Menu,
+    Menu, Camera, ExternalLink, Calendar as CalendarIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +34,7 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
 
     const mainNavItems = [
         { name: 'Dashboard',   href: route('dashboard'),       icon: LayoutDashboard, active: route().current('dashboard')   },
+        { name: 'Kalender',    href: route('calendar.index'),  icon: CalendarIcon,    active: route().current('calendar.*')  },
         { name: 'Ruangan',     href: route('rooms.index'),     icon: Building2,       active: route().current('rooms.*')     },
         { name: 'Peminjaman',  href: route('bookings.index'),  icon: CalendarCheck,   active: route().current('bookings.*')  },
     ];
@@ -49,27 +50,13 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
             {/* Logo */}
             <div className={cn(
                 'flex items-center h-[64px] border-b border-gray-200 px-4 shrink-0',
-                compact ? 'justify-center' : 'gap-3 justify-between'
+                compact ? 'justify-center' : 'justify-start'
             )}>
-                <Link href="/" className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-gray-50 border-2 border-gray-200">
-                        <ApplicationLogo className="h-8 w-8 object-contain" />
+                <Link href="/" className="flex items-center w-full min-w-0">
+                    <div className="h-12 w-full flex items-center justify-start">
+                        <ApplicationLogo className="h-10 w-auto object-contain" />
                     </div>
-                    {!compact && (
-                        <div className="min-w-0">
-                            <p className="font-extrabold text-[14px] tracking-tight text-gray-900 leading-none">SIM-MCH</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Sistem Manajemen</p>
-                        </div>
-                    )}
                 </Link>
-                {!compact && (
-                    <button
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="hidden lg:flex h-7 w-7 rounded-md items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
-                    >
-                        <PanelLeftClose className="h-4 w-4" />
-                    </button>
-                )}
             </div>
 
             {/* Nav */}
@@ -119,6 +106,32 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
                                 </li>
                             ))}
                         </ul>
+                    </div>
+                )}
+
+                {/* Social Media Link */}
+                {!compact && (
+                    <div className="pt-4 px-2">
+                        <a 
+                            href="https://www.instagram.com/makassar.creativehub" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex flex-col gap-3 p-4 rounded-2xl bg-teal-50 border border-teal-100 group hover:bg-teal-600 transition-all duration-500"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-teal-600 shadow-sm group-hover:bg-white/20 group-hover:text-white transition-colors">
+                                    <Camera className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-black text-teal-900 group-hover:text-white leading-tight">Instagram</p>
+                                    <p className="text-[9px] font-bold text-teal-400 group-hover:text-teal-200 mt-0.5">@makassar.creativehub</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 text-teal-600 group-hover:text-white transition-colors">
+                                <span className="text-[10px] font-black uppercase tracking-widest">Visit Profile</span>
+                                <ExternalLink className="h-3 w-3" />
+                            </div>
+                        </a>
                     </div>
                 )}
             </nav>
@@ -225,23 +238,68 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
                         )}
 
                         {/* Search — hidden on small mobile, shown md+ */}
-                        <div className="relative max-w-xs w-full hidden sm:flex items-center">
+                        <form 
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const search = (e.target as any).search.value;
+                                router.get(window.location.pathname, { search }, { preserveState: true });
+                            }}
+                            className="relative max-w-xs w-full hidden sm:flex items-center"
+                        >
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                             <input
                                 type="text"
+                                name="search"
+                                defaultValue={new URLSearchParams(window.location.search).get('search') || ''}
                                 placeholder="Cari..."
-                                className="h-9 w-full pl-9 pr-4 bg-gray-50 border-2 border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gray-300 transition-all"
+                                className="h-9 w-full pl-9 pr-4 bg-gray-50 border-2 border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-teal-500 transition-all"
                             />
-                        </div>
+                        </form>
                     </div>
 
                     {/* Right Side */}
                     <div className="flex items-center gap-1.5">
-                        <button className="relative h-9 w-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors">
-                            <Bell className="h-4 w-4" />
-                            <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-red-500 rounded-full border border-white" />
-                        </button>
+                        <Dropdown>
+                            <Dropdown.Trigger>
+                                <button className="relative h-9 w-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <Bell className="h-4 w-4" />
+                                    {auth.notifications?.length > 0 && (
+                                        <span className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
+                                    )}
+                                </button>
+                            </Dropdown.Trigger>
+                            <Dropdown.Content align="right" contentClasses="py-0 bg-white border-2 border-gray-200 shadow-2xl rounded-2xl w-80 mt-1 overflow-hidden">
+                                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Notifikasi</p>
+                                    {auth.notifications?.length > 0 && (
+                                        <button 
+                                            onClick={() => router.post(route('notifications.mark-as-read'))}
+                                            className="text-[10px] font-bold text-teal-600 hover:text-teal-700"
+                                        >
+                                            Tandai semua dibaca
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="max-h-[320px] overflow-y-auto">
+                                    {auth.notifications?.length > 0 ? (
+                                        auth.notifications.map((n: any) => (
+                                            <div key={n.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                                <p className="text-[12px] font-black text-slate-900 mb-1">{n.data.title}</p>
+                                                <p className="text-[11px] font-medium text-slate-500 leading-relaxed">{n.data.message}</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-12 flex flex-col items-center justify-center text-center px-6">
+                                            <Bell className="h-8 w-8 text-slate-200 mb-2" />
+                                            <p className="text-[12px] font-bold text-slate-400">Tidak ada notifikasi baru</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </Dropdown.Content>
+                        </Dropdown>
+                        
                         <div className="h-6 w-px bg-gray-100 mx-1 hidden sm:block" />
+                        
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center gap-2 h-9 px-2 sm:px-3 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 border-2 border-gray-200 transition-colors">

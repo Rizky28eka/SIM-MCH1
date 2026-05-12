@@ -14,6 +14,7 @@ class Booking extends Model
         'purpose',
         'status',
         'document_path',
+        'verification_path',
         'admin_note',
     ];
 

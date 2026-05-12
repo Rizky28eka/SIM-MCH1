@@ -31,74 +31,66 @@ export default function UpdateProfileInformation({
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Profile Information
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Update your account's profile information and email address.
-                </p>
-            </header>
-
-            <form onSubmit={submit} className="mt-6 space-y-6">
+            <form onSubmit={submit} className="space-y-6">
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
+                    <InputLabel htmlFor="name" value="Nama Lengkap" className="text-slate-700 font-bold mb-1.5 ml-1" />
                     <TextInput
                         id="name"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full px-4 py-3 bg-slate-50 border-slate-200 focus:bg-white focus:ring-teal-500 rounded-xl transition-all"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                         required
                         isFocused
                         autoComplete="name"
+                        placeholder="Nama lengkap Anda"
                     />
-
-                    <InputError className="mt-2" message={errors.name} />
+                    <InputError className="mt-2 ml-1" message={errors.name} />
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
+                    <InputLabel htmlFor="email" value="Alamat Email" className="text-slate-700 font-bold mb-1.5 ml-1" />
                     <TextInput
                         id="email"
                         type="email"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full px-4 py-3 bg-slate-50 border-slate-200 focus:bg-white focus:ring-teal-500 rounded-xl transition-all"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
                         required
                         autoComplete="username"
+                        placeholder="contoh@email.com"
                     />
-
-                    <InputError className="mt-2" message={errors.email} />
+                    <InputError className="mt-2 ml-1" message={errors.email} />
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
-                    <div>
-                        <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                            Your email address is unverified.
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                        <p className="text-sm text-amber-800 font-medium">
+                            Email Anda belum terverifikasi.
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                                className="ml-2 font-black text-teal-600 underline hover:text-teal-700"
                             >
-                                Click here to re-send the verification email.
+                                Klik di sini untuk mengirim ulang email verifikasi.
                             </Link>
                         </p>
 
                         {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                                A new verification link has been sent to your
-                                email address.
+                            <div className="mt-2 text-sm font-black text-green-600">
+                                Link verifikasi baru telah dikirim ke alamat email Anda.
                             </div>
                         )}
                     </div>
                 )}
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                <div className="flex items-center gap-4 pt-2">
+                    <PrimaryButton 
+                        disabled={processing}
+                        className="px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl shadow-lg shadow-teal-100 transition-all uppercase tracking-widest"
+                    >
+                        Simpan Perubahan
+                    </PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -107,8 +99,8 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Saved.
+                        <p className="text-sm font-bold text-teal-600 flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-teal-600" /> Tersimpan
                         </p>
                     </Transition>
                 </div>

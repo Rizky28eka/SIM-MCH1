@@ -2,81 +2,88 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Room;
 use Illuminate\Database\Seeder;
 
 class RoomSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $rooms = [
             [
-                'name' => 'Aula Serbaguna (Auditorium)',
-                'capacity' => 150,
-                'facilities' => ['Projector 4K', 'Sound System Pro', 'AC Central', 'Stage', 'Microphone Wireless'],
-                'status' => 'available',
+                'name' => 'Auditorium Utama',
+                'capacity' => 100,
+                'facilities' => ['Sound System', 'Projector', 'AC', 'Wi-Fi', 'Mic Wireless', 'Podium'],
+                'image_path' => 'rooms/auditorium.jpg',
+                'description' => 'Ruang pertemuan megah dengan sistem audio visual mutakhir, dirancang khusus untuk konferensi besar, seminar inspiratif, dan peluncuran produk kreatif.'
             ],
             [
                 'name' => 'Studio Musik & Podcast',
                 'capacity' => 5,
-                'facilities' => ['Audio Interface', 'Condenser Mic', 'Soundproof Wall', 'Monitoring Headphone'],
-                'status' => 'available',
+                'facilities' => ['Soundproof', 'Audio Interface', 'Mic Condenser', 'Mixer', 'Headphones'],
+                'image_path' => 'rooms/studio.jpg',
+                'description' => 'Ruang kedap suara dengan standar profesional bagi para kreator audio untuk memproduksi konten podcast berkualitas tinggi atau rekaman musik akustik.'
             ],
             [
-                'name' => 'Coworking Space Utama',
-                'capacity' => 40,
-                'facilities' => ['High-Speed WiFi', 'Ergonomic Chairs', 'Power Outlets', 'Coffee Machine'],
-                'status' => 'available',
+                'name' => 'Coworking Space',
+                'capacity' => 30,
+                'facilities' => ['High-speed Wi-Fi', 'Coffee Corner', 'Power Outlets', 'Ergonomic Chairs'],
+                'image_path' => 'rooms/coworking.jpg',
+                'description' => 'Area kolaboratif terbuka yang dinamis, memfasilitasi para pekerja lepas dan pengusaha muda untuk bekerja secara efisien dengan konektivitas tanpa batas.'
             ],
             [
-                'name' => 'Ruang Rapat Eksekutif',
+                'name' => 'Meeting Room A',
                 'capacity' => 12,
-                'facilities' => ['Smart TV 65"', 'Whiteboard', 'Conference Cam', 'AC'],
-                'status' => 'available',
+                'facilities' => ['Whiteboard', 'LED TV 55 Inch', 'AC', 'Wi-Fi', 'Conference Camera'],
+                'image_path' => 'rooms/meeting.jpg',
+                'description' => 'Ruang diskusi privat yang ideal untuk sesi brainstorming tim, rapat direksi, atau presentasi strategi bisnis dengan klien penting.'
             ],
             [
-                'name' => 'Studio Foto & Video',
-                'capacity' => 10,
-                'facilities' => ['Green Screen', 'Softbox Lighting', 'Tripod', 'AC'],
-                'status' => 'available',
-            ],
-            [
-                'name' => 'Lab Komputer Kreatif',
+                'name' => 'Multimedia Lab',
                 'capacity' => 20,
-                'facilities' => ['iMac Pro', 'Graphic Tablets', 'High-Speed Internet', 'AC'],
-                'status' => 'available',
+                'facilities' => ['Workstation PC', 'Adobe Suite', 'Drawing Tablet', 'Fiber Optic Internet'],
+                'image_path' => 'rooms/lab.jpg',
+                'description' => 'Laboratorium teknologi tinggi yang dilengkapi dengan perangkat keras performa tinggi untuk pelatihan desain grafis, editing video, dan pengembangan aplikasi.'
             ],
             [
-                'name' => 'Ruang Workshop Seni',
-                'capacity' => 25,
-                'facilities' => ['Large Tables', 'Sink', 'Good Lighting', 'Storage Lockers'],
-                'status' => 'available',
-            ],
-            [
-                'name' => 'Mini Library & Reading Nook',
+                'name' => 'Photo Studio',
                 'capacity' => 8,
-                'facilities' => ['Bookshelf', 'Bean Bags', 'Reading Lamps', 'Quiet Zone'],
-                'status' => 'available',
+                'facilities' => ['Lighting Kit', 'Green Screen', 'Backdrop System', 'Mirror', 'Changing Room'],
+                'image_path' => 'rooms/photo.jpg',
+                'description' => 'Studio fotografi profesional dengan pencahayaan terkontrol untuk kebutuhan katalog produk, sesi foto potret, hingga produksi video pendek.'
             ],
             [
-                'name' => 'Meeting Room B (Glass Room)',
-                'capacity' => 6,
-                'facilities' => ['Small Whiteboard', 'AC', 'Display Monitor'],
-                'status' => 'available',
+                'name' => 'Workshop Area',
+                'capacity' => 25,
+                'facilities' => ['Large Tables', 'Toolkits', 'Storage Cabinet', 'Washbasin'],
+                'image_path' => 'rooms/workshop.jpg',
+                'description' => 'Ruang serbaguna yang fleksibel untuk kegiatan tangan kreatif seperti kriya, workshop UMKM, hingga pelatihan keterampilan praktis.'
             ],
             [
-                'name' => 'Outdoor Terrace Event',
+                'name' => 'Mini Library',
+                'capacity' => 10,
+                'facilities' => ['Book Collection', 'Reading Table', 'Silent Area', 'Bean Bags'],
+                'image_path' => 'rooms/library.jpg',
+                'description' => 'Sudut tenang dengan koleksi literatur kreatif pilihan, tempat yang sempurna untuk riset mandiri atau mencari inspirasi di tengah kesibukan.'
+            ],
+            [
+                'name' => 'Podcasting Booth',
+                'capacity' => 2,
+                'facilities' => ['Dual Mic Setup', 'Audio Console', 'Comfortable Seating'],
+                'image_path' => 'rooms/pod.jpg',
+                'description' => 'Kapsul rekaman minimalis untuk dialog satu lawan satu, memberikan kejernihan suara maksimal bagi para podcaster pemula maupun profesional.'
+            ],
+            [
+                'name' => 'Rooftop Creative Lounge',
                 'capacity' => 50,
-                'facilities' => ['Outdoor Seating', 'Ambient Lighting', 'Small Stage'],
-                'status' => 'available',
+                'facilities' => ['Outdoor Seating', 'Ambiance Lighting', 'City View', 'Power Source'],
+                'image_path' => 'rooms/rooftop.jpg',
+                'description' => 'Area semi-terbuka di lantai atas dengan pemandangan kota Makassar, sangat cocok untuk networking event malam hari atau gathering komunitas.'
             ],
         ];
 
         foreach ($rooms as $room) {
-            \App\Models\Room::firstOrCreate(['name' => $room['name']], $room);
+            Room::create($room);
         }
     }
 }

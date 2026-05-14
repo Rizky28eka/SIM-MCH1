@@ -1,11 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar, Clock, CheckCircle2, XCircle, FileText,
     Download, MoreHorizontal, User as UserIcon, Building2,
-    CalendarCheck, Search, Filter, ArrowRight, ChevronLeft,
-    ChevronRight, Upload, FileCheck,
+    CalendarCheck, Search, ArrowRight, ChevronLeft,
+    ChevronRight, 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -17,9 +16,9 @@ interface Booking {
     start_time: string;
     end_time: string;
     purpose: string;
-    status: 'pending' | 'approved' | 'rejected';
-    document_path: string | null;
-    verification_path: string | null;
+    status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+    statement_path: string | null;
+    usage_path: string | null;
 }
 
 interface Props {
@@ -43,6 +42,11 @@ const STATUS_CONFIG = {
         icon: Clock,        
         label: 'Pending'  
     },
+    cancelled: { 
+        color: 'text-slate-500 bg-slate-50 border-slate-100', 
+        icon: XCircle,        
+        label: 'Dibatalkan'  
+    },
 } as const;
 
 const TABS = [
@@ -59,30 +63,6 @@ export default function Index({ bookings, isAdmin }: Props) {
     const [page, setPage] = useState(1);
     const [visible, setVisible] = useState(true);
     const PER_PAGE = 10;
-
-    const [downloadedIds, setDownloadedIds] = useState<number[]>([]);
-
-    const markAsDownloaded = (id: number) => {
-        if (!downloadedIds.includes(id)) {
-            setDownloadedIds(prev => [...prev, id]);
-        }
-    };
-
-    const handleUpload = (id: number, file: File) => {
-        if (!downloadedIds.includes(id)) {
-            alert('Harap download template terlebih dahulu sebelum mengunggah konfirmasi.');
-            return;
-        }
-        setProcessing(true);
-        const formData = new FormData();
-        formData.append('verification_document', file);
-        
-        router.post(
-            route('bookings.upload-verification', { booking: id }),
-            formData as any,
-            { onFinish: () => setProcessing(false) }
-        );
-    };
 
     const updateStatus = (id: number, status: string) => {
         setProcessing(true);
@@ -232,10 +212,12 @@ export default function Index({ bookings, isAdmin }: Props) {
                 )}
             >
                 <div className="grid grid-cols-12 px-8 py-5 bg-slate-50/50 border-b border-slate-200">
-                    <p className="col-span-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Detail Peminjaman</p>
-                    <p className="col-span-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Waktu & Jadwal</p>
-                    <p className="col-span-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Keperluan</p>
-                    <p className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">Status & Aksi</p>
+                    <p className="col-span-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Ruangan & User</p>
+                    <p className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Jadwal</p>
+                    <p className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Keperluan</p>
+                    <p className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">S. Pernyataan</p>
+                    <p className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">S. Penggunaan</p>
+                    <p className="col-span-1 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">Status</p>
                 </div>
                 {paginated.map((booking, i) => {
                     const st = STATUS_CONFIG[booking.status];
@@ -246,115 +228,68 @@ export default function Index({ bookings, isAdmin }: Props) {
                             className={cn('grid grid-cols-12 px-8 py-6 items-center hover:bg-slate-50/50 transition-all group animate-row', i < paginated.length - 1 && 'border-b border-slate-100')}
                             style={{ animationDelay: `${i * 40}ms` }}
                         >
-                            <div className="col-span-4 flex items-center gap-4">
-                                <div className="h-11 w-11 rounded-[1rem] bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:shadow-md group-hover:border-indigo-100 transition-all duration-300">
-                                    <Building2 className="h-5 w-5 text-slate-400 group-hover:text-indigo-500" />
+                            <div className="col-span-3 flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-[1rem] bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:shadow-md group-hover:border-teal-100 transition-all duration-300">
+                                    <Building2 className="h-4.5 w-4.5 text-slate-400 group-hover:text-teal-500" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[14px] font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{booking.room.name}</p>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        <UserIcon className="h-3.5 w-3.5 text-slate-300" />
-                                        <p className="text-[12px] font-bold text-slate-400 truncate tracking-tight">{booking.user.name}</p>
-                                    </div>
+                                    <Link href={route('bookings.show', booking.id)} className="text-[13px] font-black text-slate-900 truncate hover:text-teal-600 transition-colors block">{booking.room.name}</Link>
+                                    <p className="text-[11px] font-bold text-slate-400 truncate tracking-tight">{booking.user.name}</p>
                                 </div>
                             </div>
-                            <div className="col-span-3">
-                                <div className="flex items-center gap-2 text-[13px] font-black text-slate-800">
-                                    <Calendar className="h-4 w-4 text-indigo-500" />
-                                    {new Date(booking.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </div>
-                                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 mt-1.5 ml-6">
-                                    <Clock className="h-3.5 w-3.5" />
+                            <div className="col-span-2">
+                                <p className="text-[12px] font-black text-slate-800">
+                                    {new Date(booking.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                </p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-0.5">
                                     {new Date(booking.start_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                    <span className="opacity-50 mx-1">/</span>
-                                    {new Date(booking.end_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                </div>
+                                </p>
                             </div>
-                            <div className="col-span-3">
-                                <p className="text-[13px] font-bold text-slate-600 line-clamp-2 pr-6 leading-relaxed">{booking.purpose}</p>
+                            <div className="col-span-2">
+                                <p className="text-[12px] font-bold text-slate-600 line-clamp-1 pr-4">{booking.purpose}</p>
                             </div>
-                            <div className="col-span-2 flex flex-col items-end gap-3">
-                                <span className={cn('inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full border uppercase tracking-wider', st.color)}>
-                                    <Icon className="h-3.5 w-3.5" />
-                                    {st.label}
-                                </span>
-                                {isAdmin && booking.status === 'pending' && (
-                                    <div className="flex gap-2 animate-in zoom-in-95">
-                                        <button 
-                                            onClick={() => updateStatus(booking.id, 'approved')} 
-                                            disabled={processing} 
-                                            className="h-8 px-3 rounded-xl bg-emerald-500 text-white text-[11px] font-black hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-100 transition-all disabled:opacity-50 active:scale-95"
-                                        >
-                                            Setujui
-                                        </button>
-                                        <button 
-                                            onClick={() => updateStatus(booking.id, 'rejected')} 
-                                            disabled={processing} 
-                                            className="h-8 px-3 rounded-xl bg-white border border-rose-200 text-rose-500 text-[11px] font-black hover:bg-rose-50 transition-all disabled:opacity-50 active:scale-95"
-                                        >
-                                            Tolak
-                                        </button>
-                                    </div>
+                            
+                            {/* Surat Pernyataan Column */}
+                            <div className="col-span-2">
+                                {booking.statement_path ? (
+                                    <a 
+                                        href={route('bookings.download', { booking: booking.id, type: 'statement' })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                                    >
+                                        <FileText className="h-3 w-3" />
+                                        LIHAT
+                                    </a>
+                                ) : (
+                                    <span className="text-[10px] font-bold text-slate-300 italic">Belum Ada</span>
                                 )}
-                                {!isAdmin && booking.status === 'approved' && (
-                                    <div className="flex flex-col items-end gap-2">
-                                        {booking.verification_path ? (
-                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 uppercase tracking-wider">
-                                                <FileCheck className="h-3.5 w-3.5" />
-                                                Berkas Terkirim
-                                            </span>
-                                        ) : (
-                                            <div className="flex flex-col items-end gap-2">
-                                                <div className="flex flex-col sm:flex-row gap-2">
-                                                    <a 
-                                                        href="/templates/MCH Usage Application.docx"
-                                                        download
-                                                        onClick={() => markAsDownloaded(booking.id)}
-                                                        className="flex items-center gap-2 h-8 px-4 rounded-xl bg-amber-500 text-white text-[10px] font-black hover:bg-amber-600 shadow-lg shadow-amber-100 transition-all active:scale-95"
-                                                    >
-                                                        <Download className="h-3.5 w-3.5" />
-                                                        Template Aplikasi
-                                                    </a>
-                                                    <a 
-                                                        href="/templates/Peminjaman Tempat (1).docx"
-                                                        download
-                                                        onClick={() => markAsDownloaded(booking.id)}
-                                                        className="flex items-center gap-2 h-8 px-4 rounded-xl bg-slate-700 text-white text-[10px] font-black hover:bg-slate-800 shadow-lg shadow-slate-100 transition-all active:scale-95"
-                                                    >
-                                                        <Download className="h-3.5 w-3.5" />
-                                                        Template Peminjaman
-                                                    </a>
-                                                </div>
-                                                <div className="relative">
-                                                    <input
-                                                        type="file"
-                                                        id={`upload-${booking.id}`}
-                                                        className="hidden"
-                                                        onChange={(e) => e.target.files?.[0] && handleUpload(booking.id, e.target.files[0])}
-                                                        accept=".pdf,.jpg,.jpeg,.png"
-                                                        disabled={!downloadedIds.includes(booking.id)}
-                                                    />
-                                                    <button 
-                                                        onClick={() => document.getElementById(`upload-${booking.id}`)?.click()}
-                                                        disabled={processing || !downloadedIds.includes(booking.id)}
-                                                        className={cn(
-                                                            "flex items-center gap-2 h-9 px-4 rounded-xl text-white text-[11px] font-black transition-all active:scale-95 shadow-lg",
-                                                            downloadedIds.includes(booking.id) 
-                                                                ? "bg-teal-600 hover:bg-teal-700 shadow-teal-100" 
-                                                                : "bg-slate-300 cursor-not-allowed shadow-none"
-                                                        )}
-                                                    >
-                                                        <Upload className="h-3.5 w-3.5" />
-                                                        Upload Konfirmasi
-                                                    </button>
-                                                    {!downloadedIds.includes(booking.id) && (
-                                                        <p className="text-[9px] font-bold text-rose-400 mt-1 animate-pulse">Download template dulu</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                            </div>
+
+                            {/* Surat Penggunaan Column */}
+                            <div className="col-span-2">
+                                {booking.usage_path ? (
+                                    <a 
+                                        href={route('bookings.download', { booking: booking.id, type: 'usage' })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors"
+                                    >
+                                        <FileText className="h-3 w-3" />
+                                        LIHAT
+                                    </a>
+                                ) : (
+                                    <span className="text-[10px] font-bold text-slate-300 italic">Belum Ada</span>
                                 )}
+                            </div>
+
+                            <div className="col-span-1 flex justify-end">
+                                <Link href={route('bookings.show', booking.id)}>
+                                    <span className={cn('inline-flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1.5 rounded-full border uppercase tracking-wider', st.color)}>
+                                        <Icon className="h-3 w-3" />
+                                        {st.label}
+                                    </span>
+                                </Link>
                             </div>
                         </div>
                     );
@@ -405,13 +340,16 @@ export default function Index({ bookings, isAdmin }: Props) {
                                     </div>
                                 </div>
                             </div>
-                            <p className="text-[13px] font-bold text-slate-500 mb-6 leading-relaxed">{booking.purpose}</p>
-                            {isAdmin && booking.status === 'pending' && (
-                                <div className="flex gap-3">
-                                    <button onClick={() => updateStatus(booking.id, 'approved')} disabled={processing} className="flex-1 h-12 rounded-[1.25rem] bg-emerald-500 text-white text-[13px] font-black hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-100">Setujui</button>
-                                    <button onClick={() => updateStatus(booking.id, 'rejected')} disabled={processing} className="flex-1 h-12 rounded-[1.25rem] bg-slate-50 text-slate-600 border border-slate-200 text-[13px] font-black hover:bg-white transition-all active:scale-95">Tolak</button>
-                                </div>
-                            )}
+                            <p className="text-[13px] font-bold text-slate-500 mb-6 leading-relaxed line-clamp-2">{booking.purpose}</p>
+                            <div className="flex gap-3">
+                                <Link 
+                                    href={route('bookings.show', booking.id)}
+                                    className="flex-1 h-12 rounded-[1.25rem] bg-slate-900 text-white text-[13px] font-black hover:bg-teal-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
+                                >
+                                    Lihat Detail
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </div>
                         </div>
                     );
                 })}

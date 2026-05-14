@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { 
     ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
     Clock, Building2, User, Info, Filter, ArrowRight
@@ -20,6 +20,7 @@ interface Event {
     end: string;
     status: 'pending' | 'approved';
     purpose: string;
+    user_id: number;
 }
 
 interface Room {
@@ -33,6 +34,10 @@ interface Props {
 }
 
 export default function Calendar({ events, rooms }: Props) {
+    const { auth } = usePage().props as any;
+    const user = auth.user;
+    const isAdmin = user.roles?.some((r: any) => r.name === 'admin') || user.email === 'admin@mch.com';
+
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [filterRoom, setFilterRoom] = useState<number | 'all'>('all');
@@ -119,18 +124,46 @@ export default function Calendar({ events, rooms }: Props) {
                             <p className="text-[11px] font-black text-white/30 uppercase tracking-widest mb-4">Agenda Hari Ini</p>
                             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                 {getEventsForDay(selectedDate).length > 0 ? (
-                                    getEventsForDay(selectedDate).map((e) => (
-                                        <div key={e.id} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group/item">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className={cn('text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter', e.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400')}>
-                                                    {e.status}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-white/40">{format(parseISO(e.start), 'HH:mm')}</span>
+                                    getEventsForDay(selectedDate).map((e) => {
+                                        const canAccess = isAdmin || e.user_id === user.id;
+                                        return canAccess ? (
+                                            <Link 
+                                                key={e.id} 
+                                                href={route('bookings.show', e.id)}
+                                                className="block p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/15 hover:border-indigo-500/50 transition-all group/item relative overflow-hidden"
+                                            >
+                                                <div className="absolute top-0 right-0 p-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                    <ArrowRight className="h-4 w-4 text-indigo-400" />
+                                                </div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={cn('text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter', e.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400')}>
+                                                        {e.status}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-white/40">{format(parseISO(e.start), 'HH:mm')}</span>
+                                                </div>
+                                                <p className="text-[13px] font-black text-white leading-tight mb-1 group-hover/item:text-indigo-400 transition-colors">{e.title.split(' (')[0]}</p>
+                                                <p className="text-[11px] font-medium text-white/40 truncate mb-3">{e.purpose}</p>
+                                                <div className="flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest pt-3 border-t border-white/5">
+                                                    Lihat Detail
+                                                    <ArrowRight className="h-3 w-3" />
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div 
+                                                key={e.id} 
+                                                className="block p-4 rounded-2xl bg-white/5 border border-white/5 opacity-50 cursor-not-allowed"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter bg-slate-500/20 text-slate-400">
+                                                        Terisi
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-white/40">{format(parseISO(e.start), 'HH:mm')}</span>
+                                                </div>
+                                                <p className="text-[13px] font-black text-white/60 leading-tight mb-1 italic">Private Event</p>
+                                                <p className="text-[11px] font-medium text-white/20 truncate">Jadwal telah terisi</p>
                                             </div>
-                                            <p className="text-[13px] font-black text-white leading-tight mb-1 group-hover/item:text-indigo-400 transition-colors">{e.title.split(' (')[0]}</p>
-                                            <p className="text-[11px] font-medium text-white/40 truncate">{e.purpose}</p>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <div className="py-10 text-center opacity-30">
                                         <Info className="h-8 w-8 mx-auto mb-2" />
@@ -184,11 +217,27 @@ export default function Calendar({ events, rooms }: Props) {
                                         </div>
                                         
                                         <div className="space-y-1.5 max-h-[70px] overflow-hidden">
-                                            {dayEvents.slice(0, 2).map((e) => (
-                                                <div key={e.id} className={cn('px-2 py-1 rounded-md text-[9px] font-black truncate border', e.status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700')}>
-                                                    {e.title.split(' (')[0]}
-                                                </div>
-                                            ))}
+                                            {dayEvents.slice(0, 2).map((e) => {
+                                                const canAccess = isAdmin || e.user_id === user.id;
+                                                
+                                                return canAccess ? (
+                                                    <Link 
+                                                        key={e.id} 
+                                                        href={route('bookings.show', e.id)}
+                                                        className={cn('block px-2 py-1 rounded-md text-[9px] font-black truncate border transition-all hover:scale-105 active:scale-95', e.status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-50 border-amber-100 text-amber-700 hover:bg-amber-100')}
+                                                    >
+                                                        {e.title.split(' (')[0]}
+                                                    </Link>
+                                                ) : (
+                                                    <div 
+                                                        key={e.id} 
+                                                        className="px-2 py-1 rounded-md text-[9px] font-black truncate border bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60"
+                                                        title="Jadwal Terisi"
+                                                    >
+                                                        {e.title.split(' (')[0]}
+                                                    </div>
+                                                );
+                                            })}
                                             {dayEvents.length > 2 && (
                                                 <p className="text-[9px] font-bold text-slate-400 pl-1">+{dayEvents.length - 2} lainnya...</p>
                                             )}

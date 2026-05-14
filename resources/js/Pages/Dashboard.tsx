@@ -111,6 +111,12 @@ export default function Dashboard({
         to: parseISO(filters.to),
     });
 
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     // Update URL when date changes
     const handleSelect = (range: DateRange | undefined) => {
         setDate(range);
@@ -313,8 +319,9 @@ export default function Dashboard({
                             </div>
                         </div>
                         <div className="p-8">
-                            <div className="h-[320px]">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div className="h-[320px] w-full relative">
+                                {isMounted && roomUsage && roomUsage.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={roomUsage} barGap={12}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontWeight: 700 }} dy={10} />
@@ -330,7 +337,12 @@ export default function Dashboard({
                                             ))}
                                         </Bar>
                                     </BarChart>
-                                </ResponsiveContainer>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="h-full w-full flex items-center justify-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                                        <p className="text-[12px] font-bold text-slate-400">Belum ada data penggunaan ruangan</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -343,24 +355,30 @@ export default function Dashboard({
                         </div>
                         <div className="p-8">
                             <div className="h-[240px] relative">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={pieData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={90}
-                                            paddingAngle={8}
-                                            dataKey="value"
-                                        >
-                                            {pieData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip contentStyle={tooltipStyle} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                {isMounted && pieData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={pieData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={90}
+                                                paddingAngle={8}
+                                                dataKey="value"
+                                            >
+                                                {pieData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip contentStyle={tooltipStyle} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="h-full w-full flex items-center justify-center bg-slate-50 rounded-full border border-dashed border-slate-200">
+                                        <p className="text-[10px] font-bold text-slate-400">No Data</p>
+                                    </div>
+                                )}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                     <p className="text-2xl font-black text-slate-900">{stats.totalBookings}</p>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
@@ -406,7 +424,11 @@ export default function Dashboard({
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {recentBookings.map((b, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/30 transition-colors group">
+                                        <tr 
+                                            key={idx} 
+                                            className="hover:bg-slate-50/30 transition-colors group cursor-pointer"
+                                            onClick={() => router.visit(route('bookings.show', b.id))}
+                                        >
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-4">
                                                     <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs group-hover:bg-teal-600 group-hover:text-white transition-all duration-500">
@@ -434,9 +456,12 @@ export default function Dashboard({
                                                 </span>
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <button className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-teal-600 hover:border-teal-200 transition-all">
+                                                <Link 
+                                                    href={route('bookings.show', b.id)}
+                                                    className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-teal-600 hover:border-teal-200 transition-all inline-flex"
+                                                >
                                                     <ArrowRight className="h-4 w-4" />
-                                                </button>
+                                                </Link>
                                             </td>
                                         </tr>
                                     ))}

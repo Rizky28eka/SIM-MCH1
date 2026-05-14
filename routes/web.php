@@ -28,10 +28,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+    Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
     Route::post('bookings/{booking}/upload-verification', [BookingController::class, 'uploadVerification'])->name('bookings.upload-verification');
-    Route::get('bookings/{booking}/download', [BookingController::class, 'download'])->name('bookings.download');
+    Route::get('bookings/{booking}/download/{type}', [BookingController::class, 'download'])->name('bookings.download');
+    Route::get('bookings/{booking}/generate-template/{type}', [BookingController::class, 'generateTemplate'])->name('bookings.generate-template');
+    Route::get('bookings/check-availability', [BookingController::class, 'checkAvailability'])->name('bookings.check-availability');
+    Route::get('bookings/room-schedule', [BookingController::class, 'getRoomSchedule'])->name('bookings.room-schedule');
     Route::get('export/bookings/excel', [ExportController::class, 'excel'])->name('export.bookings.excel');
     Route::get('export/bookings/pdf', [ExportController::class, 'pdf'])->name('export.bookings.pdf');
     Route::get('export/bookings/period', [ExportController::class, 'period'])->name('export.bookings.period');
@@ -42,7 +46,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::post('/notifications/mark-as-read', function (\Illuminate\Http\Request $request) {
-        $request->user()->unreadNotifications->markAsRead();
+        if ($request->has('id')) {
+            $request->user()->unreadNotifications->where('id', $request->id)->markAsRead();
+        } else {
+            $request->user()->unreadNotifications->markAsRead();
+        }
         return back();
     })->name('notifications.mark-as-read');
 

@@ -6,7 +6,7 @@ import {
     LayoutDashboard, Building2, CalendarCheck, Users,
     Settings, Search, Bell, LogOut, User, ChevronRight,
     X, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen,
-    Menu, Camera, ExternalLink, Calendar as CalendarIcon,
+    Menu, Camera, ExternalLink, Calendar as CalendarIcon, FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -136,41 +136,50 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
                 )}
             </nav>
 
-            {/* User */}
-            <div className="border-t border-gray-200 shrink-0">
-                <div className={cn('p-3', compact && 'flex justify-center')}>
-                    <Dropdown>
-                        <Dropdown.Trigger>
-                            <button className={cn(
-                                'flex items-center gap-2.5 rounded-xl p-2 hover:bg-gray-50 transition-colors group',
-                                compact ? 'w-auto justify-center' : 'w-full'
-                            )}>
-                                <div className="h-8 w-8 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
-                                    {user.name.charAt(0).toUpperCase()}
-                                </div>
-                                {!compact && (
-                                    <>
-                                        <div className="flex-1 text-left min-w-0">
-                                            <p className="text-[12px] font-semibold text-gray-800 truncate leading-none">{user.name}</p>
-                                            <p className="text-[10px] text-gray-400 truncate mt-0.5">{user.email}</p>
-                                        </div>
-                                        <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                                    </>
-                                )}
-                            </button>
-                        </Dropdown.Trigger>
-                        <Dropdown.Content align="left" contentClasses="py-1.5 bg-white border-2 border-gray-200 shadow-xl rounded-xl w-52 mb-2">
-                            <div className="px-3 py-2 border-b border-gray-50 mb-1">
-                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Akun Saya</p>
+            {/* User Account Section */}
+            <div className="border-t border-gray-100 mt-auto shrink-0 bg-gray-50/50">
+                <div className={cn('p-4 space-y-4', compact && 'p-2')}>
+                    {!compact && (
+                        <div className="flex items-center gap-3 px-2 mb-2">
+                            <div className="h-10 w-10 rounded-xl bg-gray-900 flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-gray-200">
+                                {user.name.charAt(0).toUpperCase()}
                             </div>
-                            <Dropdown.Link href={route('profile.edit')} className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-gray-50">
-                                <User className="h-3.5 w-3.5 text-gray-400" /> Profil Saya
-                            </Dropdown.Link>
-                            <Dropdown.Link href={route('logout')} method="post" as="button" className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-red-50 text-red-600 w-[calc(100%-12px)]">
-                                <LogOut className="h-3.5 w-3.5" /> Keluar
-                            </Dropdown.Link>
-                        </Dropdown.Content>
-                    </Dropdown>
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-black text-gray-900 truncate leading-tight">{user.name}</p>
+                                <p className="text-[10px] font-bold text-gray-400 truncate mt-0.5">{user.email}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        <Link
+                            href={route('profile.edit')}
+                            title={compact ? "Profil Saya" : undefined}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
+                                compact ? "justify-center" : "",
+                                route().current('profile.edit') ? "bg-white border border-gray-200 text-gray-900 shadow-sm" : "text-gray-500 hover:bg-white hover:text-gray-900"
+                            )}
+                        >
+                            <User className={cn("h-4 w-4 shrink-0", route().current('profile.edit') ? "text-indigo-500" : "text-gray-400 group-hover:text-gray-600")} />
+                            {!compact && <span className="text-[12px] font-black">Profil Saya</span>}
+                        </Link>
+
+                        <Link
+                            href={route('logout')}
+                            method="post"
+                            as="button"
+                            title={compact ? "Keluar" : undefined}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group w-full text-left",
+                                compact ? "justify-center" : "",
+                                "text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                            )}
+                        >
+                            <LogOut className="h-4 w-4 shrink-0" />
+                            {!compact && <span className="text-[12px] font-black">Keluar</span>}
+                        </Link>
+                    </div>
                 </div>
             </div>
         </>
@@ -283,10 +292,30 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
                                 <div className="max-h-[320px] overflow-y-auto">
                                     {auth.notifications?.length > 0 ? (
                                         auth.notifications.map((n: any) => (
-                                            <div key={n.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                                <p className="text-[12px] font-black text-slate-900 mb-1">{n.data.title}</p>
-                                                <p className="text-[11px] font-medium text-slate-500 leading-relaxed">{n.data.message}</p>
-                                            </div>
+                                            <button 
+                                                key={n.id} 
+                                                onClick={() => {
+                                                    router.post(route('notifications.mark-as-read'), { id: n.id }, {
+                                                        onSuccess: () => router.visit(n.data.url)
+                                                    });
+                                                }}
+                                                className="w-full text-left p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors group/item relative"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className={cn(
+                                                        "h-2 w-2 rounded-full mt-1.5 shrink-0",
+                                                        n.data.type === 'success' ? 'bg-emerald-500' : 
+                                                        n.data.type === 'error' ? 'bg-rose-500' : 'bg-blue-500'
+                                                    )} />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                                            <p className="text-[12px] font-black text-slate-900 truncate">{n.data.title}</p>
+                                                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tight shrink-0">Baru</span>
+                                                        </div>
+                                                        <p className="text-[11px] font-medium text-slate-500 leading-relaxed line-clamp-2">{n.data.message}</p>
+                                                    </div>
+                                                </div>
+                                            </button>
                                         ))
                                     ) : (
                                         <div className="py-12 flex flex-col items-center justify-center text-center px-6">
@@ -300,24 +329,15 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
                         
                         <div className="h-6 w-px bg-gray-100 mx-1 hidden sm:block" />
                         
-                        <Dropdown>
-                            <Dropdown.Trigger>
-                                <button className="flex items-center gap-2 h-9 px-2 sm:px-3 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 border-2 border-gray-200 transition-colors">
-                                    <div className="h-5 w-5 rounded-md bg-gray-900 flex items-center justify-center text-white font-bold text-[10px]">
-                                        {user.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <span className="hidden sm:inline">{user.name.split(' ')[0]}</span>
-                                </button>
-                            </Dropdown.Trigger>
-                            <Dropdown.Content align="right" contentClasses="py-1.5 bg-white border-2 border-gray-200 shadow-xl rounded-xl w-52 mt-1">
-                                <Dropdown.Link href={route('profile.edit')} className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-gray-50">
-                                    <User className="h-3.5 w-3.5 text-gray-400" /> Profil Saya
-                                </Dropdown.Link>
-                                <Dropdown.Link href={route('logout')} method="post" as="button" className="flex items-center gap-2 mx-1.5 rounded-lg text-[13px] hover:bg-red-50 text-red-600 w-[calc(100%-12px)]">
-                                    <LogOut className="h-3.5 w-3.5" /> Keluar
-                                </Dropdown.Link>
-                            </Dropdown.Content>
-                        </Dropdown>
+                        <div className="hidden sm:flex items-center gap-3 pl-2">
+                            <div className="text-right">
+                                <p className="text-[12px] font-black text-gray-900 leading-none">{user.name.split(' ')[0]}</p>
+                                <p className="text-[9px] font-bold text-teal-600 uppercase tracking-widest mt-1">{isAdmin ? 'Administrator' : 'User'}</p>
+                            </div>
+                            <div className="h-9 w-9 rounded-xl bg-gray-900 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-gray-200">
+                                {user.name.charAt(0).toUpperCase()}
+                            </div>
+                        </div>
                     </div>
                 </header>
 

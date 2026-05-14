@@ -29,7 +29,7 @@ class BookingNotification extends Notification
             'title'      => $this->title,
             'message'    => $this->message,
             'type'       => $this->type,
-            'url'        => route('bookings.index'),
+            'url'        => route('bookings.show', $this->booking->id),
         ];
     }
 }

@@ -12,10 +12,18 @@ class Booking extends Model
         'start_time',
         'end_time',
         'purpose',
+        'position',
+        'organization',
+        'phone',
+        'participants_count',
+        'event_format',
+        'objective',
         'status',
+        'admin_note',
+        'statement_path',
+        'usage_path',
         'document_path',
         'verification_path',
-        'admin_note',
     ];
 
     protected $casts = [

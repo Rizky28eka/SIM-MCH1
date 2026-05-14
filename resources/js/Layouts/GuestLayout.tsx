@@ -9,7 +9,7 @@ export default function Guest({ children }: PropsWithChildren) {
             {/* ── LEFT SIDE: BRANDING / DECORATION ── */}
             <div className="hidden lg:flex lg:w-1/2 bg-teal-600 relative items-center justify-center p-20 overflow-hidden">
                 <img 
-                    src="/Users/rizky28eka/.gemini/antigravity/brain/30f2af9d-56d7-4c7d-b6e9-80e424acee35/makassar_creative_hub_interior_1778556483515.png" 
+                    src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200" 
                     className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale-[0.5]"
                     alt="Background"
                 />

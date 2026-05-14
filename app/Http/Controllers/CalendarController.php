@@ -22,6 +22,7 @@ class CalendarController extends Controller
                     'end' => $booking->end_time,
                     'status' => $booking->status,
                     'purpose' => $booking->purpose,
+                    'user_id' => $booking->user_id,
                 ];
             });
 

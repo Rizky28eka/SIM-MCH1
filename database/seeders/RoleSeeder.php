@@ -28,7 +28,17 @@ class RoleSeeder extends Seeder
         );
         $admin->assignRole($adminRole);
 
-        // 2. 15 Dummy Users
+        // 2. Standard User (for Testing & Seeding)
+        $standardUser = \App\Models\User::firstOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'name' => 'Budi Santoso',
+                'password' => bcrypt('password'),
+            ]
+        );
+        $standardUser->assignRole($userRole);
+
+        // 3. 15 Additional Dummy Users
         $names = [
             'Andi Pratama', 'Budi Santoso', 'Citra Lestari', 'Dewi Sartika', 'Eko Wijaya',
             'Fajar Ramadhan', 'Gita Permata', 'Hadi Kusuma', 'Indah Putri', 'Joko Susilo',
